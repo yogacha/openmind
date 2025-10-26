@@ -15,7 +15,7 @@ class Item {
         this.title = title;
         this.body = body;
     }
-    toObject() {  
+    toObject() {
         return { ...this };
     }
     static fromObject(obj) {
@@ -25,29 +25,27 @@ class Item {
 
 class Relations {
     constructor() {
-        this._rel = new Map(); // nested map, lightId => materialId => Optional[attachedId]
+        /** @type {Map<id, Map<id, id | null>>} lightId => materialId => attachedId */
+        this._rel = new Map();
     }
-    addTriplet(srcId, midId, endId = null) { // currently work as set
-        if (!this._rel.has(srcId)) {
-            this._rel.set(srcId, new Map());
+    addTriplet(startId, midId, endId) { // currently endId is unique for each (startId, midId)
+        if (!this._rel.has(startId)) {
+            this._rel.set(startId, new Map());
         }
-        this._rel.
-        this._rel.get(srcId).set(midId, endId);
+        this._rel.get(startId).set(midId, endId);
     }
-    removeTriplet(srcId, midId) {
-        if (this._rel.has(srcId)) {
-            this._rel.get(srcId).delete(midId);
+    removeTriplets(startId, midId) {
+        if (this._rel.has(startId)) {
+            this._rel.get(startId).delete(midId);
         }
     }
-    removeSource(id) {
-        return this._rel.delete(id);
-    }
-    removeMediate(id) {
+    deleteItem(id) {
+        this._rel.delete(id); // remove as source
         for (const materialMap of this._rel.values()) {
-            materialMap.delete(id);
+            materialMap.delete(id); // remove as mid
             for (const [matId, attachedId] of materialMap.entries()) {
                 if (attachedId === id) {
-                    materialMap.set(matId, null);
+                    materialMap.set(matId, null); // remove as end
                 }
             }
         }
@@ -61,11 +59,11 @@ class Relations {
         }
         return array;
     }
-    static fromObject(json) {
+    static fromObject(obj) {
         const proj = new Relations();
-        for (const entry of json) {
+        obj.forEach(entry => {
             proj.addTriplet(entry.lightId, entry.materialId, entry.attachedId);
-        }
+        });
         return proj;
     }
 }
@@ -80,23 +78,17 @@ class World {
         // this.axes = new Map(); // id => AxisItem (future)
     }
     toObject() {
-        const items = [];
-        for (const item of this.items.values()) {
-            items.push(item.toObject());
-        }
-
         return {
-            items: items,
+            items: Array.from(this.items.values()).map(item => item.toObject()),
             projections: this.projections.toObject(),
         };
     }
-    static fromObject(json) {
+    static fromObject(obj) {
         const world = new World();
-        for (const itemJson of json.items) {
-            const item = Item.fromObject(itemJson);
-            world.items.set(item.id, item);
-        }
-        world.projections = Relations.fromObject(json.projections);
+        obj.items.forEach(item => {
+            world.items.set(item.id, Item.fromObject(item));
+        });
+        world.projections = Relations.fromObject(obj.projections);
         return world;
     }
     getItem(id) {
@@ -115,8 +107,7 @@ class World {
 
         if (exist) {
             this.items.delete(id); // remove item from world
-            this.projections.removeSource(id); // remove it as a light source
-            this.projections.removeMediate(id); // remove it as a material target
+            this.projections.deleteItem(id); // remove 
         }
         return exist;
     }
@@ -129,7 +120,7 @@ class World {
         this.projections.addTriplet(lightId, materialId, null);
     }
     removeProjection(lightId, materialId) {  // unpair light and material
-        this.projections.removeTriplet(lightId, materialId);
+        this.projections.removeTriplets(lightId, materialId);
     }
     addConnection(lightId, materialId, attachedId) { // link material to shadow (projection)
         this.projections.addTriplet(lightId, materialId, attachedId); // #
@@ -155,12 +146,18 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     constructor() {
         this.dataPath = null;
         /** @type {Map<id, 'On'|'Off'>} */
-        this.lights = new Map(); // id => 'On'|'Off'
-        /** @type {Set<id>} */
-        this.items = new Set(); // ids of items in attention
-        // this.visibleOnlyItems = new Set();
+        this.lights = new Map();
+        /** @type {Set<id>} ids of items in attention */
+        this.items = new Set();
     }
-    static fromObject(obj) { // triggered: load workspace
+    toObject() {
+        return {
+            dataPath: this.dataPath,
+            lights: Array.from(this.lights.entries()).map(([id, status]) => ({ id, status })),
+            items: Array.from(this.items),
+        };
+    }
+    static fromObject(obj) {
         const ws = new Workspace();
         ws.dataPath = obj.dataPath;
         for (const it of obj.lights) {
@@ -171,12 +168,15 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return ws;
     }
-    toObject() {
-        return {
-            dataPath: this.dataPath,
-            lights: Array.from(this.lights.entries()).map(([id, status]) => ({ id, status })),
-            items: Array.from(this.items),
-        };
+    add(id, type) {
+        if (type === 'light') {
+            this.lights.set(id, 'Off'); // default light status is Off
+        }
+        this.items.add(id);
+    }
+    delete(id) {
+        this.lights.delete(id);
+        this.items.delete(id);
     }
     /** @type {(world: World) => Set<string>} */
     getVisibleItems(world) { // triggered: get all items in attention + visibleOnly
@@ -195,29 +195,19 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return res;
     }
-    /** @type {(world: World) => Array<{from: id, through: id, to: [id]}>} */
-    getProjections(world) {
+    /** @type {(world: World) => Array<{start: id, mid: id, end: id | null}>} */
+    listProjections(world) {
         const res = [];
-        for (const [from, status] of this.lights.entries()) {
+        for (const [start, status] of this.lights.entries()) {
             if (status !== 'On') { continue }
-            for (const through of this.items) {
-                const to = world.getProjection(from, through);
-                if (to !== undefined) {
-                    res.push({ from, through, to });
+            for (const mid of this.items) {
+                const end = world.getProjection(start, mid);
+                if (end !== undefined) {
+                    res.push({ start, mid, end });
                 }
             }
         }
         return res;
-    }
-    add(id, type) {
-        if (type === 'light') {
-            this.lights.set(id, 'Off'); // default light status is Off
-        }
-        this.items.add(id);
-    }
-    delete(id) {
-        this.lights.delete(id);
-        this.items.delete(id);
     }
 }
 
