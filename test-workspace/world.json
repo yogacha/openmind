@@ -1,0 +1,68 @@
+{
+  "items": [
+    {
+      "id": "light1abc123def456",
+      "type": "light",
+      "title": "Main Light Source",
+      "body": "# Primary Light\n\nThis is the main light source that illuminates various materials in our thought space.\n\n## Properties\n- High intensity\n- Broad spectrum\n- Can be toggled on/off"
+    },
+    {
+      "id": "light2ghi789jkl012",
+      "type": "light", 
+      "title": "Secondary Light",
+      "body": "# Secondary Light\n\nA supporting light source for additional perspectives.\n\n- Lower intensity\n- Focused beam\n- Complements main light"
+    },
+    {
+      "id": "mat1mno345pqr678",
+      "type": "material",
+      "title": "Core Concept",
+      "body": "# Core Concept\n\nThis represents a fundamental idea or concept that can be examined from different angles.\n\n## Details\n- Central to the thought process\n- Can cast shadows when illuminated\n- Connects to other concepts"
+    },
+    {
+      "id": "mat2stu901vwx234",
+      "type": "material",
+      "title": "Supporting Idea",
+      "body": "# Supporting Idea\n\nA secondary concept that supports or relates to the core concept.\n\n- Provides additional context\n- Can be projected by multiple lights\n- May have connections to other materials"
+    },
+    {
+      "id": "mat3yzab567cde890",
+      "type": "material", 
+      "title": "Research Notes",
+      "body": "# Research Notes\n\n## Key Findings\n- Finding 1: Important discovery\n- Finding 2: Related observation\n- Finding 3: Future direction\n\n## References\n- Source A\n- Source B\n- Source C"
+    },
+    {
+      "id": "shadow1fgh123ijk456",
+      "type": "material",
+      "title": "Implication A",
+      "body": "# Implication A\n\nThis represents a shadow or implication cast by the core concept when viewed through the main light.\n\n- Derived from core concept\n- Specific perspective\n- Action item or conclusion"
+    },
+    {
+      "id": "shadow2lmn789opq012",
+      "type": "material",
+      "title": "Alternative View", 
+      "body": "# Alternative View\n\nAn alternative perspective or shadow cast by the supporting idea.\n\n- Different interpretation\n- Counter-argument\n- Additional consideration"
+    }
+  ],
+  "projections": [
+    {
+      "lightId": "light1abc123def456",
+      "materialId": "mat1mno345pqr678",
+      "attachedId": "shadow1fgh123ijk456"
+    },
+    {
+      "lightId": "light1abc123def456", 
+      "materialId": "mat2stu901vwx234",
+      "attachedId": "shadow2lmn789opq012"
+    },
+    {
+      "lightId": "light2ghi789jkl012",
+      "materialId": "mat1mno345pqr678",
+      "attachedId": null
+    },
+    {
+      "lightId": "light2ghi789jkl012",
+      "materialId": "mat3yzab567cde890",
+      "attachedId": null
+    }
+  ]
+}
