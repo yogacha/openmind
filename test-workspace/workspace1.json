@@ -1,0 +1,20 @@
+{
+  "dataPath": "test-workspace/world.json",
+  "lights": [
+    {
+      "id": "light1abc123def456",
+      "status": "On"
+    },
+    {
+      "id": "light2ghi789jkl012", 
+      "status": "Off"
+    }
+  ],
+  "items": [
+    "light1abc123def456",
+    "light2ghi789jkl012",
+    "mat1mno345pqr678",
+    "mat2stu901vwx234",
+    "mat3yzab567cde890"
+  ]
+}
