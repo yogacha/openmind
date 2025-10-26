@@ -18,7 +18,6 @@ what data we store, how we strore them
     * `materialId`: id of the projected material
     * `attachedId`: id or null, if null, shadow not yet linked to any item
 * `workspace.json`: current state of shaape
-  * `dataPath`: path of `world.json`, always not null
   * `lights`: list of lights in attention
     * `id`: id of light
     * `status`: 'On' or 'Off'

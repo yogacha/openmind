@@ -2,16 +2,14 @@
  * @typedef {string} id
  */
 
-// Utility function to generate random ID
-function randId() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
+const { randId } = require('./utils.js');
 
 class Item {
-    constructor(id, type, title = 'Untitled', body = '') { // new item (page)
+    constructor(id, type, title = 'Untitled', body = '') {
         /** @type {id} */
         this.id = id;
-        this.type = type; // 'material' or 'light'
+        /** @type {'material' | 'light'} */
+        this.type = type;
         this.title = title;
         this.body = body;
     }
@@ -28,24 +26,34 @@ class Relations {
         /** @type {Map<id, Map<id, id | null>>} lightId => materialId => attachedId */
         this._rel = new Map();
     }
-    addTriplet(startId, midId, endId) { // currently endId is unique for each (startId, midId)
-        if (!this._rel.has(startId)) {
-            this._rel.set(startId, new Map());
+    addTriplet(start, mid, end) {
+        if (!this._rel.has(start)) {
+            this._rel.set(start, new Map());
         }
-        this._rel.get(startId).set(midId, endId);
+        // currently end is unique for each (start, mid)
+        this._rel.get(start).set(mid, end);
     }
-    removeTriplets(startId, midId) {
-        if (this._rel.has(startId)) {
-            this._rel.get(startId).delete(midId);
+    removeTriplet(start, mid, end) {
+        if (this._rel.has(start) && this._rel.get(start).get(mid) === end) {
+            this._rel.get(start).set(mid, null);
+            // currently end is unique, so just set to null
+        } else { // raise error
+            throw new Error(`Triplet (${start}, ${mid}, ${end}) does not exist.`);
         }
     }
-    deleteItem(id) {
+    unlink(start, mid) { // remove triplets of form (start, mid, *)
+        if (this._rel.has(start)) {
+            this._rel.get(start).delete(mid);
+        }
+    }
+    unlinkAll(id) { // remove as source / mid / end 
         this._rel.delete(id); // remove as source
-        for (const materialMap of this._rel.values()) {
-            materialMap.delete(id); // remove as mid
-            for (const [matId, attachedId] of materialMap.entries()) {
-                if (attachedId === id) {
-                    materialMap.set(matId, null); // remove as end
+        for (const mid2end of this._rel.values()) {
+            mid2end.delete(id); // remove as mid
+            for (const [mid, end] of mid2end.entries()) {
+                if (end === id) {
+                    mid2end.set(mid, null); // remove as end
+                    // the mapping remains, but end is set to null
                 }
             }
         }
@@ -107,26 +115,26 @@ class World {
 
         if (exist) {
             this.items.delete(id); // remove item from world
-            this.projections.deleteItem(id); // remove 
+            this.projections.unlinkAll(id); // remove projections related to this item
         }
         return exist;
-    }
-    getProjection(lightId, materialId) {  // assume lightId and materialId exist, otherwise return undefined
-        if (!this.projections._rel.has(lightId)) return undefined;
-        if (!this.projections._rel.get(lightId).has(materialId)) return undefined;
-        return this.projections._rel.get(lightId).get(materialId); // return attachedId or null
     }
     addProjection(lightId, materialId) {  // pair light and material, since it's a new projection, attachedId is null
         this.projections.addTriplet(lightId, materialId, null);
     }
     removeProjection(lightId, materialId) {  // unpair light and material
-        this.projections.removeTriplets(lightId, materialId);
+        this.projections.unlink(lightId, materialId);
     }
-    addConnection(lightId, materialId, attachedId) { // link material to shadow (projection)
+    getAttachment(lightId, materialId) {  // assume lightId and materialId exist, otherwise return undefined
+        if (!this.projections._rel.has(lightId)) return undefined;
+        if (!this.projections._rel.get(lightId).has(materialId)) return undefined;
+        return this.projections._rel.get(lightId).get(materialId); // return attachedId or null
+    }
+    addAttachment(lightId, materialId, attachedId) { // link material to shadow (projection)
         this.projections.addTriplet(lightId, materialId, attachedId); // #
     }
-    removeConnection(lightId, materialId, attachedId) { // unlink material from shadow (projection), 
-        this.projections.addTriplet(lightId, materialId, null);  // #
+    removeAttachment(lightId, materialId, attachedId) { // unlink material from shadow (projection), 
+        this.projections.removeTriplet(lightId, materialId, attachedId);
     }
     searchTitle(query) { // return list of items that match the query in title
         const results = [];
@@ -144,22 +152,19 @@ class World {
 
 class Workspace { // describe status of workspace data, actions in workspace should not affect world data
     constructor() {
-        this.dataPath = null;
-        /** @type {Map<id, 'On'|'Off'>} */
+        /** @type {Map<id, 'On'|'Off'>} status of lights in attention */
         this.lights = new Map();
-        /** @type {Set<id>} ids of items in attention */
+        /** @type {Set<id>} ids of items (lights & materials) in attention */
         this.items = new Set();
     }
     toObject() {
         return {
-            dataPath: this.dataPath,
             lights: Array.from(this.lights.entries()).map(([id, status]) => ({ id, status })),
             items: Array.from(this.items),
         };
     }
     static fromObject(obj) {
         const ws = new Workspace();
-        ws.dataPath = obj.dataPath;
         for (const it of obj.lights) {
             ws.lights.set(it.id, it.status);
         }
@@ -178,45 +183,32 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.lights.delete(id);
         this.items.delete(id);
     }
-    /** @type {(world: World) => Set<string>} */
-    getVisibleItems(world) { // triggered: get all items in attention + visibleOnly
-        /** @type {Set<id>} */
-        const res = new Set();
-        for (const [lightId, status] of this.lights.entries()) {
-            res.add(lightId);
-            if (status === 'On') {
-                for (const materialId of this.items) {
-                    const attachedId = world.getProjection(lightId, materialId);
-                    if (attachedId !== undefined && attachedId !== null) {
-                        res.add(attachedId);
-                    }
-                }
-            }
-        }
-        return res;
-    }
-    /** @type {(world: World) => Array<{start: id, mid: id, end: id | null}>} */
-    listProjections(world) {
-        const res = [];
+    /** @type {(world: World) => Iterable<[id, id, id | null]>} */
+    *projections(world) {
         for (const [start, status] of this.lights.entries()) {
             if (status !== 'On') { continue }
             for (const mid of this.items) {
-                const end = world.getProjection(start, mid);
+                const end = world.getAttachment(start, mid);
                 if (end !== undefined) {
-                    res.push({ start, mid, end });
+                    yield [start, mid, end];
                 }
             }
         }
-        return res;
     }
+
 }
 
 
 // (future) sequence of manipulations in workspace forms a story, you can tell
-// const storyLines = {
 
+// class Story {
+//     constructor() {
+//         /** @type {Array<{timestamp: number, workspace: Workspace}>} */
+//         this.frames = [];
+//         this.audioPath = null;
+//         this.subtitle = null;
+//     }
 // }
-
 
 // Every action in world and workspace should be invertible (for undo/redo)
 
