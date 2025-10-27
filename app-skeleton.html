@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Canvas Editor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Main Canvas -->
+    <canvas id="main-canvas"></canvas>
+    
+    <!-- UI Controls -->
+    <div class="ui-controls">
+        <!-- Top Bar -->
+        <div class="top-bar">
+
+            <div class="search-container">
+                <input type="text" id="search-bar" placeholder="Search items..." />
+                <div id="search-dropdown" class="search-dropdown hidden"></div>
+            </div>
+            
+            <button id="help-btn" class="control-btn" title="Help">❓ Help</button>
+        </div>
+    </div>
+    
+    <!-- Context Menus -->
+    <div id="canvas-context-menu" class="context-menu hidden">
+        <div class="menu-item" data-action="add-light">Add Light</div>
+        <div class="menu-item" data-action="add-material">Add Material</div>
+        <div class="menu-item" data-action="paste" id="paste-option">Paste</div>
+    </div>
+    
+    <div id="item-context-menu" class="context-menu hidden">
+        <div class="menu-item" data-action="copy">Copy</div>
+        <div class="menu-item" data-action="delete">Delete</div>
+        <div class="menu-item" data-action="attention-off">Remove from Attention</div>
+        <div class="menu-item" data-action="change-color" id="change-color-option">Change Color</div>
+        <div class="menu-item" data-action="unlink" id="unlink-option">Unlink from Shadow</div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="help-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Help & Instructions</h2>
+            <div class="help-content">
+                <!-- Help content will be populated by JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Side Panel for Editing -->
+    <div id="side-panel" class="side-panel hidden">
+        <div class="panel-header">
+            <h3 id="panel-title">Edit Item</h3>
+            <button id="panel-close" class="close-btn">&times;</button>
+        </div>
+        <div class="panel-content">
+            <input type="text" id="item-title-input" placeholder="Item title..." />
+            <textarea id="item-body-input" placeholder="Item content (markdown)..."></textarea>
+            <div class="panel-actions">
+                <button id="save-item" class="btn-primary">Save</button>
+                <button id="cancel-edit" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- File Input (hidden) -->
+    <input type="file" id="file-input" webkitdirectory directory multiple style="display: none;" />
+    
+    <script type="module" src="app.js"></script>
+</body>
+</html>
