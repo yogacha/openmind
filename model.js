@@ -2,7 +2,7 @@
  * @typedef {string} id
  */
 
-const { randId } = require('./utils.js');
+import { randId } from './utils.js';
 
 class Item {
     constructor(id, type, title = 'Untitled', body = '') {
@@ -212,7 +212,5 @@ class Workspace { // describe status of workspace data, actions in workspace sho
 
 // Every action in world and workspace should be invertible (for undo/redo)
 
-// Export classes for testing
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { World, Workspace };
-}
+// Export classes for ES6 modules
+export { World, Workspace };
