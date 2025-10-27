@@ -24,11 +24,10 @@ class CanvasEditor {
                 centerX: 0, centerY: 0, zoom: 1 
             },
             interaction: {
-                selectedNode: null,
-                draggedNode: null,
+                selectedId: null,
+                draggedId: null,
                 dragStart: { x: 0, y: 0 },
-                copiedItem: null,
-                isEditingTitle: false,
+                copiedId: null,
                 isPanning: false,
                 lastCameraCenterX: 0,
                 lastCameraCenterY: 0,
@@ -149,6 +148,13 @@ class CanvasEditor {
         console.log('setCamera', centerX, centerY, zoom);
         this.render();
     }
+    setItemStyle(id, x, y, color) {
+        const nodeData = this.state.nodes.get(id);
+        nodeData.x = x;
+        nodeData.y = y;
+        nodeData.color = color;
+        this.render();
+    }
 
     // ============================================================================
     // EVENT HANDLERS
@@ -182,14 +188,14 @@ class CanvasEditor {
         const worldCoord = this._canvas2world(mouse);
         
         // Check if clicked on an item
-        const clickedNode = this.getNodeAtPosition(worldCoord.x, worldCoord.y);
+        const clickedNodeId = this.getItemIdAtPosition(worldCoord.x, worldCoord.y);
         
-        if (clickedNode) {
-            this.state.interaction.selectedNode = clickedNode;
-            this.state.interaction.draggedNode = clickedNode;
+        if (clickedNodeId) {
+            this.state.interaction.selectedId = clickedNodeId;
+            this.state.interaction.draggedId = clickedNodeId;
         } else {
             // Clear selection
-            this.state.interaction.selectedNode = null;
+            this.state.interaction.selectedId = null;
             
             // Start panning
             this.state.interaction.isPanning = true;
@@ -219,18 +225,24 @@ class CanvasEditor {
                 this.state.interaction.lastCameraCenterY - deltaY,
                 null
             );
-        } else if (this.state.interaction.draggedNode) {
+        } else if (this.state.interaction.draggedId) {
             // Update cursor
             this.canvas.style.cursor = 'move';
             // Update item position
             const worldCoord = this._canvas2world(mouse);
             
             // Update position in the nodes Map
-            const nodeData = this.state.nodes.get(this.state.interaction.draggedNode.id);
-            if (nodeData) {
-                nodeData.x = worldCoord.x;
-                nodeData.y = worldCoord.y;
+            const nodeData = this.state.nodes.get(this.state.interaction.draggedId);
+            
+            if (!nodeData) {
+                console.warn('nodeData not found for id:', this.state.interaction.draggedId);
+                console.log('Available node IDs:', Array.from(this.state.nodes.keys()));
+                console.log('draggedNodeId:', this.state.interaction.draggedId);
+                return;
             }
+            
+            nodeData.x = worldCoord.x;
+            nodeData.y = worldCoord.y;
             
             this.render();
         }
@@ -239,7 +251,7 @@ class CanvasEditor {
     handleCanvasMouseUp(event) {
         // Clear drag states
         this.state.interaction.isPanning = false;
-        this.state.interaction.draggedNode = null;
+        this.state.interaction.draggedId = null;
         
         // Change cursor back
         this.canvas.style.cursor = 'grab';
@@ -262,11 +274,11 @@ class CanvasEditor {
         const worldCoord = this._canvas2world(mouse);
         
         // Check if right-clicked on an item
-        const clickedNode = this.getNodeAtPosition(worldCoord.x, worldCoord.y);
+        const clickedNodeId = this.getItemIdAtPosition(worldCoord.x, worldCoord.y);
         
-        if (clickedNode) {
+        if (clickedNodeId) {
             // Show item context menu
-            this.showItemContextMenu(event.clientX, event.clientY, clickedNode);
+            this.showItemContextMenu(event.clientX, event.clientY, clickedNodeId);
         } else {
             // Show canvas context menu
             this.showCanvasContextMenu(event.clientX, event.clientY);
@@ -408,12 +420,12 @@ class CanvasEditor {
                 this.triggerFileImport();
                 break;
             case 'delete':
-                if (this.state.interaction.selectedNode) {
+                if (this.state.interaction.selectedId) {
                     this.deleteSelectedItem();
                 }
                 break;
             case 'enter':
-                if (this.state.interaction.selectedNode) {
+                if (this.state.interaction.selectedId) {
                     this.editSelectedItem();
                 }
                 break;
@@ -421,7 +433,9 @@ class CanvasEditor {
                 this.cancelCurrentOperation();
                 break;
             case 'l':
-                if (this.state.interaction.selectedNode?.type === 'light') {
+                const selectedItem = this.state.interaction.selectedId ? 
+                    this.world.getItem(this.state.interaction.selectedId) : null;
+                if (selectedItem?.type === 'light') {
                     this.toggleLight();
                 }
                 break;
@@ -567,32 +581,23 @@ class CanvasEditor {
         this.state.ui.contextMenuVisible = true;
     }
     
-    showItemContextMenu(x, y, node) {
+    showItemContextMenu(x, y, id) {
         const menu = document.getElementById('item-context-menu');
         menu.style.left = x + 'px';
         menu.style.top = y + 'px';
         menu.classList.remove('hidden');
         this.state.ui.contextMenuVisible = true;
-        this.state.interaction.selectedNode = node;
+        this.state.interaction.selectedId = id;
     }
     
-    getNodeAtPosition(worldX, worldY) {
+    getItemIdAtPosition(worldX, worldY) {
         const radius = 30; // Item radius
-        // TODO: 
-        // this.state.nodes; // use instead
         for (const [id, node] of this.state.nodes.entries()) {
             const distance = Math.sqrt(
                 Math.pow(worldX - node.x, 2) + Math.pow(worldY - node.y, 2)
             );
             if (distance <= radius) {
-                const item = this.world.getItem(id);
-                return {
-                    id: id,
-                    ...item,
-                    x: node.x,
-                    y: node.y,
-                    color: node.color
-                }
+                return id
             }
         }
         return null;
@@ -683,7 +688,7 @@ class CanvasEditor {
         this.ctx.fillText(info.title, info.x, info.y);
         
         // Draw selection ring if selected
-        if (this.state.interaction.selectedNode?.id === info.id) {
+        if (this.state.interaction.selectedId === info.id) {
             this.ctx.beginPath();
             this.ctx.arc(info.x, info.y, radius + 5, 0, 2 * Math.PI);
             this.ctx.strokeStyle = '#007acc';
