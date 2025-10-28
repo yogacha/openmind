@@ -417,7 +417,7 @@ class CanvasEditor {
                 break;
             case 'ctrl+o':
                 event.preventDefault();
-                this.triggerFileImport();
+                document.getElementById('file-input').click();
                 break;
             case 'delete':
                 if (this.state.interaction.selectedId) {
@@ -459,7 +459,20 @@ class CanvasEditor {
      * FILE HANDLING
      */
     handleFileSelect(event) {
-        // TODO: Process selected files (world.json, workspace.json)
+        const files = event.target.files;
+        if (files.length > 0) {
+            const file = files[0];
+            const fileName = file.name;
+            
+            // Update page title with the file name (remove .workspace.json extension for cleaner display)
+            const displayName = fileName.replace(/\.workspace\.json$/i, '');
+            document.title = displayName + ' - Interactive Canvas Editor';
+            
+            console.log('Selected file:', fileName);
+            console.log('Updated page title to:', displayName);
+            
+            // TODO: Process file content (load workspace data)
+        }
     }
     
     /**
@@ -537,11 +550,6 @@ class CanvasEditor {
     saveWorkspace() {
         // TODO: Save current state to files
         console.log('Workspace saved!');
-    }
-    
-    triggerFileImport() {
-        // TODO: Open file dialog
-        document.getElementById('file-input').click();
     }
     
     showHelpModal() {
@@ -637,16 +645,8 @@ class CanvasEditor {
      * @returns {void}
      */
     drawItems() {
-        for (const [id, style] of this.state.nodes.entries()) {
-            const item = this.world.getItem(id);
-            const info = {
-                ...item,
-                x: style.x,
-                y: style.y,
-                color: style.color
-            };
-            // todo: on | off
-            this.drawItem(info);
+        for (const id of this.state.nodes.keys()) {
+            this.drawItem(id);
         }
     }
     
@@ -660,7 +660,12 @@ class CanvasEditor {
      * @param {string} [info.color] - Color for light items
      * @returns {void}
      */
-    drawItem(info) {
+    drawItem(id) {
+        const info = {
+            id: id,
+            ...this.world.getItem(id),
+            ...this.state.nodes.get(id)
+        };
         const radius = 30;
         
         this.ctx.beginPath();
