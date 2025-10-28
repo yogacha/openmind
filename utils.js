@@ -21,3 +21,10 @@ export {
     antipode,
     randId,
 };
+
+export default {
+    vecAdd,
+    vecSub,
+    antipode,
+    randId,
+};

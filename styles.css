@@ -17,6 +17,11 @@ body {
     display: block;
     background: white;
     cursor: grab;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
 }
 
 #main-canvas:active {

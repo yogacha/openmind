@@ -8,6 +8,7 @@
  * 4. Event Cleanup - Proper removal of listeners when needed
  */
 
+import utils from './utils.js';
 import { World, Workspace } from './model.js';
 
 
@@ -160,10 +161,9 @@ class CanvasEditor {
     // EVENT HANDLERS
     // ============================================================================
     _mouse(event) { // Returns position relative to canvas center
-        const rect = this.canvas.getBoundingClientRect();
         return {
-            x: event.clientX - rect.left - this.canvas.width / 2,
-            y: event.clientY - rect.top - this.canvas.height / 2
+            x: event.clientX - this.canvas.width / 2,
+            y: event.clientY - this.canvas.height / 2
         };
     }
     _canvas2world(canvasCenterPoint) { // Convert canvas-center coordinates to world coordinates
@@ -269,9 +269,8 @@ class CanvasEditor {
     
     handleCanvasContextMenu(event) {
         event.preventDefault();
-        const mouse = this._mouse(event);
         // Convert to world coordinates
-        const worldCoord = this._canvas2world(mouse);
+        const worldCoord = this._canvas2world(this._mouse(event));
         
         // Check if right-clicked on an item
         const clickedNodeId = this.getItemIdAtPosition(worldCoord.x, worldCoord.y);
@@ -349,8 +348,7 @@ class CanvasEditor {
     }
     
     executeContextAction(action, event) {
-        const mouse = this._mouse(event);
-        const worldCoord = this._canvas2world(mouse);
+        const worldCoord = this._canvas2world(this._mouse(event));
 
         switch (action) {
             case 'add-light':
@@ -609,10 +607,6 @@ class CanvasEditor {
             }
         }
         return null;
-    }
-    
-    generateId() {
-        return 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
     
     /**
