@@ -4,6 +4,7 @@
 
 import { randId } from './utils.js';
 
+
 class Item {
     constructor(id, type, title = 'Untitled', body = '') {
         /** @type {id} */
@@ -99,6 +100,9 @@ class World {
         world.projections = Relations.fromObject(obj.projections);
         return world;
     }
+    has(id) {
+        return this.items.has(id);
+    }
     getItem(id) {
         return this.items.get(id);
     }
@@ -156,7 +160,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.lights = new Map();
         /** @type {Set<id>} ids of items (lights & materials) in attention */
         this.items = new Set();
-        // this._nodes
+
+        this._nodes = new Map(); // id => {x, y, color}, layout info for items in attention (future)
     }
     toObject() {
         return {
@@ -176,27 +181,84 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         // TODO: nodes: 
         return ws;
     }
-    // TODO: sync(world) {
-    // sync workspace with world, 
-    // 1. remove items not in world
-    // 2. calculate layout for items in attention (this._nodes)
-    // 2.1 if layout exists, keep it
-    // 2.2 if not, set random x,y & default color
-    // }
-    // TODO: add(id, world)
-    add(id, type) {
+    initializeNodes(world) { // random position
+        // Remove items not in world
+        for (const id of this.items) {
+            if (!world.items.has(id)) this.delete(id, world);
+        }
+        this._updateNodes(world);
+    }
+    colour(id) {
+        if (this.items.has(id)) {
+            return this.lights.has(id) ? '#ffff00' : '#ffffff';
+        }
+        return '#888888';
+    }
+    _updateNodes(world) {
+        // set default color and random position for missing items ONLY
+        for (const id of this.items) {
+            if (this._nodes.has(id)) continue;
+            this._nodes.set(id, {
+                x: Math.random() * 800 - 400,
+                y: Math.random() * 600 - 300, 
+                color: this.colour(id)
+            });
+        }
+        // now, _nodes contains all items in this.items
+
+        // gather visibleOnly items, a disjoint set from this.items
+        const visibleOnly = new Set();
+        for (const [, , id] of this.projections(world)) {
+            if (!this.items.has(id)) visibleOnly.add(id);
+        }
+        // remove invisible nodes
+        for (const id of this._nodes.keys()) {
+            if (!this.items.has(id) && !visibleOnly.has(id)) {
+                this._nodes.delete(id);
+            }
+        }
+        // add unsetted visibleOnly nodes
+        for (const id of visibleOnly) {
+            if (!this._nodes.has(id)) {
+                this._nodes.set(id, {
+                    x: Math.random() * 800 - 400,
+                    y: Math.random() * 600 - 300,
+                    color: this.colour(id),
+                });
+            }
+        }
+    }
+    add(id, world) {
         if (this.items.has(id)) {
             return; // already in attention
         }
-        if (type === 'light') {
+        if (world.getItem(id).type === 'light') {
             this.lights.set(id, 'Off'); // default light status is Off
         }
         this.items.add(id);
+        this._updateNodes(world);
     }
-    // TODO: delete(id, world)
-    delete(id) {
+    delete(id, world) {
         this.lights.delete(id);
         this.items.delete(id);
+        this._updateNodes(world);
+    }
+    setStyle(id, x, y, colour = null) {
+        if (this._nodes.has(id)) {
+            this._nodes.set(id, { x, y, color: colour || this.colour(id) });
+        }
+    }
+    *nodes(world) {
+        for (const [id, info] of this._nodes.entries()) {
+            yield {
+                id: id,
+                type: world.getItem(id).type,
+                title: world.getItem(id).title,
+                x: info.x,
+                y: info.y,
+                color: info.color.slice(0, 7) + (this.items.has(id) ? 'ff' : '88'),
+            };
+        }
     }
     /** @type {(world: World) => Iterable<[id, id, id | null]>} */
     *projections(world) {
@@ -209,6 +271,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 }
             }
         }
+    }
+    *curves(world) {
+    // TODO: yield curves
     }
 
 }

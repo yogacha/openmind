@@ -11,11 +11,6 @@
 import utils from './utils.js';
 import { World, Workspace } from './model.js';
 
-const palette = {
-    'light': ['#ffffff80', '#ffff00ff'],
-    'material': ['#ffffff80', '#ffffffff'],
-}
-
 class CanvasEditor {
     constructor() {
         // Initialize state
@@ -28,7 +23,6 @@ class CanvasEditor {
                 workspace: '???',
             },
             /** @type {Map<string, {x: number, y: number, color: string}>} */
-            nodes: new Map(),
             camera: {
                 centerX: 0, centerY: 0, zoom: 1
             },
@@ -161,13 +155,6 @@ class CanvasEditor {
         console.log('setCamera', centerX, centerY, zoom);
         this.render();
     }
-    setNodeStyle(id, x, y, color) {
-        const nodeData = this.state.nodes.get(id);
-        nodeData.x = x;
-        nodeData.y = y;
-        nodeData.color = color;
-        this.render();
-    }
 
     // ============================================================================
     // EVENT HANDLERS
@@ -244,17 +231,15 @@ class CanvasEditor {
             const worldCoord = this._canvas2world(mouse);
 
             // Update position in the nodes Map
-            const nodeData = this.state.nodes.get(this.state.interaction.draggedId);
+            const nodeData = this.workspace._nodes.get(this.state.interaction.draggedId);
 
             if (!nodeData) {
                 console.warn('nodeData not found for id:', this.state.interaction.draggedId);
-                console.log('Available node IDs:', Array.from(this.state.nodes.keys()));
+                console.log('Available node IDs:', Array.from(this.workspace._nodes.keys()));
                 console.log('draggedNodeId:', this.state.interaction.draggedId);
                 return;
             }
-
-            nodeData.x = worldCoord.x;
-            nodeData.y = worldCoord.y;
+            this.workspace.setStyle(this.state.interaction.draggedId, worldCoord.x, worldCoord.y)
 
             this.render();
         }
@@ -541,7 +526,7 @@ class CanvasEditor {
         const content = await file.text();
         this.workspace = Workspace.fromObject(JSON.parse(content));
 
-        this.initializeNodes();
+        this.workspace.initializeNodes(this.world);
 
         this.setCamera(0, 0, 1);
         this.render();
@@ -570,9 +555,8 @@ class CanvasEditor {
         // Add to world data
         const item = this.world.addItem('light');
         // add to attention
-        this.workspace.add(item.id, 'light');
-        // add node style
-        this.state.nodes.set(item.id, { x, y, color: '#ffeb3b' });
+        this.workspace.add(item.id, this.world);
+        this.workspace.setStyle(item.id, x, y);
 
         this.render();
         console.log('Added light:', item.id);
@@ -582,9 +566,8 @@ class CanvasEditor {
         // Add to world data
         const item = this.world.addItem('material');
         // add to attention
-        this.workspace.add(item.id, 'material');
-        // add node style
-        this.state.nodes.set(item.id, { x, y, color: '#ffffff' });
+        this.workspace.add(item.id, this.world);
+        this.workspace.setStyle(item.id, x, y);
 
         this.render();
         console.log('Added material:', item.id);
@@ -599,7 +582,32 @@ class CanvasEditor {
     }
 
     deleteSelectedItem() {
-        // TODO: Remove selected item from world
+        if (!this.state.interaction.selectedId) {
+            console.log('No item selected for deletion');
+            return;
+        }
+
+        const itemId = this.state.interaction.selectedId;
+        const item = this.world.getItem(itemId);
+        
+        if (!item) {
+            console.warn('Selected item not found in world:', itemId);
+            return;
+        }
+
+        // Remove from world (this also removes all projections/attachments)
+        this.world.removeItem(itemId);
+        
+        // Remove from workspace (this should handle _nodes cleanup via _updateNodes)
+        this.workspace.delete(itemId, this.world);
+        
+        // Clear selection
+        this.state.interaction.selectedId = null;
+        
+        // Re-render to show changes
+        this.render();
+        
+        console.log('Deleted item:', itemId, 'Type:', item.type);
     }
 
     removeFromAttention() {
@@ -616,7 +624,7 @@ class CanvasEditor {
 
     // _addAttention(item) {
     //     this.workspace.add(item.id, item.type);
-    //     this.state.nodes.set(item.id, {
+    //     this.workspace._nodes.set(item.id, {
     // }
 
     editSelectedNode() {
@@ -629,11 +637,8 @@ class CanvasEditor {
         }
 
         // Add item to workspace when editing (if not already there)
-        this.workspace.add(selectedItem.id, selectedItem.type);
+        this.workspace.add(selectedItem.id, this.world);
         
-        // is always in nodes, thats why we can select
-        const node = this.state.nodes.get(selectedItem.id);
-        this.setNodeStyle(selectedItem.id, node.x, node.y, palette[selectedItem.type][1]);
         // Re-render to show any newly added nodes
         this.render();
 
@@ -647,26 +652,6 @@ class CanvasEditor {
 
     toggleLight() {
         // TODO: Toggle light on/off status
-    }
-
-    initializeNodes() { // random position
-        this.state.nodes.clear();
-        // Initialize nodes for workspace items
-        for (const id of this.workspace.items) {
-            if (this.workspace.lights.has(id)) { // randomize light position in outer region
-                this.state.nodes.set(id, {
-                    x: (Math.random() < 0.5 ? -1 : 1) * (400 + Math.random() * 400),
-                    y: (Math.random() < 0.5 ? -1 : 1) * (300 + Math.random() * 300),
-                    color: palette['light'][1]
-                })
-            } else { // randomize material position in center region
-                this.state.nodes.set(id, {
-                    x: Math.random() * 800 - 400,
-                    y: Math.random() * 600 - 300,
-                    color: palette['material'][1]
-                });
-            }
-        }
     }
 
     download() {
@@ -808,7 +793,7 @@ class CanvasEditor {
 
     getItemIdAtPosition(worldX, worldY) {
         const radius = 30; // Item radius
-        for (const [id, node] of this.state.nodes.entries()) {
+        for (const [id, node] of this.workspace._nodes.entries()) {
             const distance = Math.sqrt(
                 Math.pow(worldX - node.x, 2) + Math.pow(worldY - node.y, 2)
             );
@@ -849,8 +834,10 @@ class CanvasEditor {
      * @returns {void}
      */
     drawNodes() {
-        for (const id of this.state.nodes.keys()) {
-            this.drawNode(id);
+        for (const info of this.workspace.nodes(this.world)) {
+            this.drawNode(info);
+        // for (const id of this.workspace._nodes.keys()) {
+        //     this.drawNode(id);
         }
     }
 
@@ -864,28 +851,22 @@ class CanvasEditor {
      * @param {string} [info.color] - Color for light items
      * @returns {void}
      */
-    drawNode(id) {
-        const info = {
-            id: id,
-            ...this.world.getItem(id),
-            ...this.state.nodes.get(id)
-        };
+    drawNode(info) {
+        // const info = {
+        //     id: id,
+        //     ...this.world.getItem(id),
+        //     ...this.workspace._nodes.get(id)
+        // };
         const radius = 30;
 
         this.ctx.beginPath();
         this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
-        // this.ctx.color = info.color;
+        this.ctx.fillStyle = info.color;
+        this.ctx.fill();
 
-        if (info.type === 'light') {
-            // Light: filled circle with color
-            // this.ctx.fillStyle = item.color || '#ffeb3b';
-            this.ctx.fillStyle = '#ffeb3b';
-            this.ctx.fill();
-        } else {
+        if (info.type === 'material') {
             // Material: white fill with border
-            this.ctx.fillStyle = 'white';
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#333';
+            this.ctx.strokeStyle = '#333333' + info.color.slice(-2);
             this.ctx.lineWidth = 2 / this.state.camera.zoom;
             this.ctx.stroke();
         }
