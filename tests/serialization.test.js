@@ -46,8 +46,8 @@ async function runTests() {
 
     try {
         // Load test data (adjust path for new location)
-        const worldJsonPath = path.join(__dirname, '..', 'test-workspace', 'world.json');
-        const workspaceJsonPath = path.join(__dirname, '..', 'test-workspace', 'workspace1.json');
+        const worldJsonPath = path.join(__dirname, '..', 'test-workspace', 'hello.world.json');
+        const workspaceJsonPath = path.join(__dirname, '..', 'test-workspace', 'example.workspace.json');
         
         log('\n📁 Loading JSON files...', 'blue');
         const worldJsonData = JSON.parse(fs.readFileSync(worldJsonPath, 'utf8'));

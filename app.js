@@ -11,6 +11,10 @@
 import utils from './utils.js';
 import { World, Workspace } from './model.js';
 
+const palette = {
+    'light': ['#ffffff80', '#ffff00ff'],
+    'material': ['#ffffff80', '#ffffffff'],
+}
 
 class CanvasEditor {
     constructor() {
@@ -18,11 +22,15 @@ class CanvasEditor {
         this.world = new World();
         this.workspace = new Workspace();
 
-        this.state = {       
+        this.state = {
+            name: {
+                world: 'Unknown World',
+                workspace: '???',
+            },
             /** @type {Map<string, {x: number, y: number, color: string}>} */
             nodes: new Map(),
-            camera: { 
-                centerX: 0, centerY: 0, zoom: 1 
+            camera: {
+                centerX: 0, centerY: 0, zoom: 1
             },
             interaction: {
                 selectedId: null,
@@ -36,40 +44,42 @@ class CanvasEditor {
             ui: {
                 searchResults: [],
                 contextMenuVisible: false,
-                modalOpen: false
+                modalOpen: false,
+                openingFiles: false,
+                openingStep: null
             }
         };
-        
+
         // Get DOM references
         /** @type {HTMLCanvasElement} */
         this.canvas = document.getElementById('main-canvas');
-        
+
         /** @type {CanvasRenderingContext2D} */
         this.ctx = this.canvas.getContext('2d');
-        
+
         // Initialize the application
         this.init();
     }
-    
+
     init() {
         this.setupCanvas();
         this.setupEventListeners();
         this.render();
     }
-    
+
     setupCanvas() {
         // Set up canvas size
         this.resizeCanvas();
-        
+
         // Set initial transform
         this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
-    
+
     resizeCanvas() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
     }
-    
+
     /**
      * COMMON PRACTICE 1: Event Delegation
      * Instead of adding listeners to each element, use delegation on parent containers
@@ -77,17 +87,17 @@ class CanvasEditor {
     setupEventListeners() {
         // Canvas Events (Primary interaction surface)
         this.setupCanvasEvents();
-        
+
         // UI Control Events (Buttons, inputs, etc.)
         this.setupUIEvents();
-        
+
         // Keyboard Events (Global shortcuts)
         this.setupKeyboardEvents();
-        
+
         // Window Events (Resize, beforeunload, etc.)
         this.setupWindowEvents();
     }
-    
+
     setupCanvasEvents() {
         // Mouse events on canvas
         this.canvas.addEventListener('mousedown', this.handleCanvasMouseDown.bind(this));
@@ -96,13 +106,13 @@ class CanvasEditor {
         this.canvas.addEventListener('wheel', this.handleCanvasWheel.bind(this));
         this.canvas.addEventListener('contextmenu', this.handleCanvasContextMenu.bind(this));
         this.canvas.addEventListener('dblclick', this.handleCanvasDoubleClick.bind(this));
-        
+
         // Touch events for mobile support
         this.canvas.addEventListener('touchstart', this.handleCanvasTouchStart.bind(this));
         this.canvas.addEventListener('touchmove', this.handleCanvasTouchMove.bind(this));
         this.canvas.addEventListener('touchend', this.handleCanvasTouchEnd.bind(this));
     }
-    
+
     /**
      * COMMON PRACTICE 2: Event Delegation for UI Controls
      * Use single listener on parent container instead of individual listeners
@@ -110,21 +120,21 @@ class CanvasEditor {
     setupUIEvents() {
         // Event delegation for all buttons
         document.addEventListener('click', this.handleGlobalClick.bind(this));
-        
+
         // Context menu delegation
         document.addEventListener('click', this.handleContextMenuClick.bind(this));
-        
+
         // Search functionality
         const searchBar = document.getElementById('search-bar');
         searchBar.addEventListener('input', this.handleSearchInput.bind(this));
         searchBar.addEventListener('focus', this.handleSearchFocus.bind(this));
         searchBar.addEventListener('blur', this.handleSearchBlur.bind(this));
-        
+
         // File input for import
-        const fileInput = document.getElementById('file-input');
-        fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+        document.getElementById('world-input').addEventListener('change', this.handleWorldSelect.bind(this));
+        document.getElementById('workspace-input').addEventListener('change', this.handleWorkspaceSelect.bind(this));
     }
-    
+
     /**
      * COMMON PRACTICE 3: Centralized Keyboard Event Handling
      * Handle all keyboard shortcuts in one place with clear mapping
@@ -133,12 +143,12 @@ class CanvasEditor {
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
         document.addEventListener('keyup', this.handleKeyUp.bind(this));
     }
-    
+
     setupWindowEvents() {
         window.addEventListener('resize', this.handleWindowResize.bind(this));
         window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
     }
-    
+
     // ===============================
     // Semantic events
     // ===============================
@@ -183,43 +193,43 @@ class CanvasEditor {
      */
     handleCanvasMouseDown(event) {
         if (event.button !== 0) return; // Only handle left mouse button
-        
+
         const mouse = this._mouse(event);
         const worldCoord = this._canvas2world(mouse);
-        
+
         // Check if clicked on an item
         const clickedNodeId = this.getItemIdAtPosition(worldCoord.x, worldCoord.y);
-        
+
         if (clickedNodeId) {
             this.state.interaction.selectedId = clickedNodeId;
             this.state.interaction.draggedId = clickedNodeId;
         } else {
             // Clear selection
             this.state.interaction.selectedId = null;
-            
+
             // Start panning
             this.state.interaction.isPanning = true;
         }
-        
+
         // Store drag start position
         this.state.interaction.dragStart = mouse;
         this.state.interaction.lastCameraCenterX = this.state.camera.centerX;
         this.state.interaction.lastCameraCenterY = this.state.camera.centerY;
-        
+
         this.render();
     }
-    
+
     handleCanvasMouseMove(event) {
         const mouse = this._mouse(event);
-        
+
         if (this.state.interaction.isPanning) {
             // Update cursor
             this.canvas.style.cursor = 'grabbing';
-            
+
             // Update camera position based on mouse movement
             const deltaX = (mouse.x - this.state.interaction.dragStart.x) / this.state.camera.zoom;
             const deltaY = (mouse.y - this.state.interaction.dragStart.y) / this.state.camera.zoom;
-            
+
             this.setCamera(
                 this.state.interaction.lastCameraCenterX - deltaX,
                 this.state.interaction.lastCameraCenterY - deltaY,
@@ -230,51 +240,51 @@ class CanvasEditor {
             this.canvas.style.cursor = 'move';
             // Update item position
             const worldCoord = this._canvas2world(mouse);
-            
+
             // Update position in the nodes Map
             const nodeData = this.state.nodes.get(this.state.interaction.draggedId);
-            
+
             if (!nodeData) {
                 console.warn('nodeData not found for id:', this.state.interaction.draggedId);
                 console.log('Available node IDs:', Array.from(this.state.nodes.keys()));
                 console.log('draggedNodeId:', this.state.interaction.draggedId);
                 return;
             }
-            
+
             nodeData.x = worldCoord.x;
             nodeData.y = worldCoord.y;
-            
+
             this.render();
         }
     }
-    
+
     handleCanvasMouseUp(event) {
         // Clear drag states
         this.state.interaction.isPanning = false;
         this.state.interaction.draggedId = null;
-        
+
         // Change cursor back
         this.canvas.style.cursor = 'grab';
     }
-    
+
     handleCanvasWheel(event) {
         event.preventDefault();
 
         // Calculate zoom factor
         const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
         const newZoom = Math.max(0.1, Math.min(5, this.state.camera.zoom * zoomFactor));
-        
+
         this.setCamera(null, null, newZoom);
     }
-    
+
     handleCanvasContextMenu(event) {
         event.preventDefault();
         // Convert to world coordinates
         const worldCoord = this._canvas2world(this._mouse(event));
-        
+
         // Check if right-clicked on an item
         const clickedNodeId = this.getItemIdAtPosition(worldCoord.x, worldCoord.y);
-        
+
         if (clickedNodeId) {
             // Show item context menu
             this.showItemContextMenu(event.clientX, event.clientY, clickedNodeId);
@@ -283,32 +293,32 @@ class CanvasEditor {
             this.showCanvasContextMenu(event.clientX, event.clientY);
         }
     }
-    
+
     handleCanvasDoubleClick(event) {
         // TODO: Handle double-click actions
         // - Edit item title (if item clicked)
         // - Add to attention (if visible-only item)
     }
-    
+
     handleCanvasTouchStart(event) {
         // TODO: Handle touch start (mobile support)
     }
-    
+
     handleCanvasTouchMove(event) {
         // TODO: Handle touch move (mobile support)
     }
-    
+
     handleCanvasTouchEnd(event) {
         // TODO: Handle touch end (mobile support)
     }
-    
+
     /**
      * COMMON PRACTICE 4: Global Click Handler with Event Delegation
      * Single handler that routes to appropriate actions based on target
      */
     handleGlobalClick(event) {
         const target = event.target;
-        
+
         // Route to specific handlers based on element attributes/classes
         if (target.classList.contains('control-btn')) {
             this.handleControlButton(target, event);
@@ -321,10 +331,10 @@ class CanvasEditor {
             this.closeAllPopups();
         }
     }
-    
+
     handleControlButton(button, event) {
         const buttonId = button.id;
-        
+
         switch (buttonId) {
             case 'help-btn':
                 this.showHelpModal();
@@ -332,21 +342,21 @@ class CanvasEditor {
             // Add more button handlers as needed
         }
     }
-    
+
     handleCloseButton(button, event) {
         // TODO: Close appropriate modal/panel/menu
     }
-    
+
     /**
      * CONTEXT MENU EVENT DELEGATION
      */
     handleContextMenuClick(event) {
         if (!event.target.classList.contains('menu-item')) return;
-        
+
         const action = event.target.getAttribute('data-action');
         this.executeContextAction(action, event);
     }
-    
+
     executeContextAction(action, event) {
         const worldCoord = this._canvas2world(this._mouse(event));
 
@@ -376,10 +386,10 @@ class CanvasEditor {
                 this.unlinkFromShadow();
                 break;
         }
-        
+
         this.hideContextMenu();
     }
-    
+
     /**
      * SEARCH EVENT HANDLERS
      */
@@ -387,26 +397,26 @@ class CanvasEditor {
         const query = event.target.value;
         // TODO: Filter items and show dropdown
     }
-    
+
     handleSearchFocus(event) {
         // TODO: Show search dropdown if there are results
     }
-    
+
     handleSearchBlur(event) {
         // TODO: Hide search dropdown (with delay for click handling)
     }
-    
+
     handleSearchItemClick(event) {
         // TODO: Add selected item to canvas/attention
     }
-    
+
     /**
      * COMMON PRACTICE 5: Centralized Keyboard Shortcut Mapping
      */
     handleKeyDown(event) {
         // Check for modifier keys and create shortcut string
         const shortcut = this.getShortcutString(event);
-        
+
         // Route to appropriate handlers
         switch (shortcut) {
             case 'ctrl+s':
@@ -415,7 +425,7 @@ class CanvasEditor {
                 break;
             case 'ctrl+o':
                 event.preventDefault();
-                document.getElementById('file-input').click();
+                this.openFiles();
                 break;
             case 'delete':
                 if (this.state.interaction.selectedId) {
@@ -431,7 +441,7 @@ class CanvasEditor {
                 this.cancelCurrentOperation();
                 break;
             case 'l':
-                const selectedItem = this.state.interaction.selectedId ? 
+                const selectedItem = this.state.interaction.selectedId ?
                     this.world.getItem(this.state.interaction.selectedId) : null;
                 if (selectedItem?.type === 'light') {
                     this.toggleLight();
@@ -439,11 +449,11 @@ class CanvasEditor {
                 break;
         }
     }
-    
+
     handleKeyUp(event) {
         // TODO: Handle key releases if needed
     }
-    
+
     getShortcutString(event) {
         const parts = [];
         if (event.ctrlKey) parts.push('ctrl');
@@ -452,26 +462,84 @@ class CanvasEditor {
         parts.push(event.key.toLowerCase());
         return parts.join('+');
     }
-    
-    handleFileSelect(event) {
-        const files = event.target.files;
-        if (files.length > 0) {
-            /** @type {File} */
-            const file = files[0];
-            const fileName = file.name;
-            
-            // Update page title with the file name (remove .workspace.json extension for cleaner display)
-            const displayName = fileName.replace(/\.workspace\.json$/i, '');
-            document.title = displayName + ' - Interactive Canvas Editor';
-            
-            console.log('Selected file:', fileName);
-            console.log('Updated page title to:', displayName);
-            
-            // TODO: Process file content (load workspace data)
 
+    async openFiles() {
+        console.log('Opening files: Step 1 - Select World file');
+        
+        // Set flag to indicate we're in sequential file opening mode
+        this.state.ui.openingFiles = true;
+        this.state.ui.openingStep = 'world';
+        
+        // Trigger world file selection
+        document.getElementById('world-input').click();
+    }
+
+    async handleWorldSelect(event) {
+        const files = event.target.files;
+        const file = files[0];
+        
+        if (!file) {
+            // User cancelled world selection
+            if (this.state.ui.openingFiles) {
+                console.log('World file selection cancelled - aborting file opening');
+                this.state.ui.openingFiles = false;
+                this.state.ui.openingStep = null;
+            }
+            return;
+        }
+
+        this.state.name.world = file.name.replace(/\.world\.json$/i, '') || 'Unknown World';
+        const content = await file.text();
+        this.world = World.fromObject(JSON.parse(content));
+        console.log('Loaded world:', this.state.name.world);
+
+        // If we're in sequential opening mode, automatically proceed to workspace
+        if (this.state.ui.openingFiles && this.state.ui.openingStep === 'world') {
+            console.log('Opening files: Step 2 - Select Workspace file');
+            this.state.ui.openingStep = 'workspace';
+            
+            // Small delay to ensure world dialog is fully closed
+            setTimeout(() => {
+                document.getElementById('workspace-input').click();
+            }, 100);
+        }
+    } 
+    async handleWorkspaceSelect(event) {
+        const files = event.target.files;
+        const file = files[0];
+        
+        if (!file) {
+            // User cancelled workspace selection
+            if (this.state.ui.openingFiles) {
+                console.log('Workspace file selection cancelled - aborting file opening');
+                this.state.ui.openingFiles = false;
+                this.state.ui.openingStep = null;
+            }
+            return;
+        }
+
+        this.state.name.workspace = file.name.replace(/\.workspace\.json$/i, '') || '???';
+
+        document.title = this.state.name.workspace + ' for ' + this.state.name.world + ' - Canvas Editor';
+
+        console.log('Loaded workspace:', file.name);
+
+        const content = await file.text();
+        this.workspace = Workspace.fromObject(JSON.parse(content));
+
+        this.initializeNodes();
+
+        this.setCamera(0, 0, 1);
+        this.render();
+
+        // Complete the sequential file opening process
+        if (this.state.ui.openingFiles && this.state.ui.openingStep === 'workspace') {
+            console.log('File opening completed successfully');
+            this.state.ui.openingFiles = false;
+            this.state.ui.openingStep = null;
         }
     }
-    
+
     /**
      * WINDOW EVENT HANDLERS
      */
@@ -479,15 +547,15 @@ class CanvasEditor {
         this.resizeCanvas();
         this.render();
     }
-    
+
     handleBeforeUnload(event) {
         // TODO: Warn about unsaved changes if any
     }
-    
+
     // ============================================================================
     // ACTION METHODS (TO BE IMPLEMENTED)
     // ============================================================================
-    
+
     addLight(x, y) {
         // Add to world data
         const item = this.world.addItem('light');
@@ -499,7 +567,7 @@ class CanvasEditor {
         this.render();
         console.log('Added light:', item.id);
     }
-    
+
     addMaterial(x, y) {
         // Add to world data
         const item = this.world.addItem('material');
@@ -507,93 +575,107 @@ class CanvasEditor {
         this.workspace.add(item.id, 'material');
         // add node style
         this.state.nodes.set(item.id, { x, y, color: '#ffffff' });
-        
+
         this.render();
         console.log('Added material:', item.id);
     }
-    
+
     pasteItem(x, y) {
         // TODO: Paste copied item
     }
-    
+
     copySelectedItem() {
         // TODO: Copy selected item to clipboard state
     }
-    
+
     deleteSelectedItem() {
         // TODO: Remove selected item from world
     }
-    
+
     removeFromAttention() {
         // TODO: Remove item from attention (make visible-only)
     }
-    
+
     changeItemColor() {
         // TODO: Show color picker for light items
     }
-    
+
     unlinkFromShadow() {
         // TODO: Unlink material from shadow
     }
-    
+
     editSelectedItem() {
         // TODO: Open side panel for content editing
     }
-    
+
     toggleLight() {
         // TODO: Toggle light on/off status
     }
-    
+
+    initializeNodes() { // random position
+        // Initialize nodes for workspace items
+        for (const id of this.workspace.items) {
+            if (this.workspace.lights.has(id)) { // randomize light position in outer region
+                this.state.nodes.set(id, {
+                    x: (Math.random() < 0.5 ? -1 : 1) * (400 + Math.random() * 400),
+                    y: (Math.random() < 0.5 ? -1 : 1) * (300 + Math.random() * 300),
+                    color: palette['light'][1]
+                })
+            } else { // randomize material position in center region
+                this.state.nodes.set(id, {
+                    x: Math.random() * 800 - 400,
+                    y: Math.random() * 600 - 300,
+                    color: palette['material'][1]
+                });
+            }
+        }
+    }
+
     download() {
         // Prepare data for saving
         const workspaceText = JSON.stringify(this.workspace.toObject(), null, 2);
         const worldText = JSON.stringify(this.world.toObject(), null, 2);
-        
+
         // Determine filenames
-        const fileInput = document.getElementById('file-input');
-        let workspaceFilename = 'workspace.json';
-        
-        if (fileInput.files.length > 0) {
-            // Use original filename if available
-            const originalFile = fileInput.files[0];
-            workspaceFilename = originalFile.name;
-        }
-        
-        utils.downloadFile('world.json', worldText);
-        utils.downloadFile(workspaceFilename, workspaceText);
+        const worldFilename = this.status + '.world.json';
+        const workspaceInput = document.getElementById('workspace-input');
+        const workspaceFilename = workspaceInput.files.length > 0 ? workspaceInput.files[0].name : 'workspace.json';
+
+        utils.downloadJSONFile(worldFilename, worldText);
+        utils.downloadJSONFile(workspaceFilename, workspaceText);
 
         console.log('Workspace saved!');
     }
-    
+
     showHelpModal() {
         // TODO: Display help modal
     }
-    
+
     cancelCurrentOperation() {
         // TODO: Cancel any ongoing operation (editing, dragging, etc.)
     }
-    
+
     closeAllPopups() {
         // Hide context menus
         document.getElementById('canvas-context-menu').classList.add('hidden');
         document.getElementById('item-context-menu').classList.add('hidden');
-        
+
         // Hide modals
         document.getElementById('help-modal').classList.add('hidden');
-        
+
         // Hide search dropdown
         document.getElementById('search-dropdown').classList.add('hidden');
-        
+
         this.state.ui.contextMenuVisible = false;
         this.state.ui.modalOpen = false;
     }
-    
+
     hideContextMenu() {
         document.getElementById('canvas-context-menu').classList.add('hidden');
         document.getElementById('item-context-menu').classList.add('hidden');
         this.state.ui.contextMenuVisible = false;
     }
-    
+
     showCanvasContextMenu(x, y) {
         const menu = document.getElementById('canvas-context-menu');
         menu.style.left = x + 'px';
@@ -601,7 +683,7 @@ class CanvasEditor {
         menu.classList.remove('hidden');
         this.state.ui.contextMenuVisible = true;
     }
-    
+
     showItemContextMenu(x, y, id) {
         const menu = document.getElementById('item-context-menu');
         menu.style.left = x + 'px';
@@ -610,7 +692,7 @@ class CanvasEditor {
         this.state.ui.contextMenuVisible = true;
         this.state.interaction.selectedId = id;
     }
-    
+
     getItemIdAtPosition(worldX, worldY) {
         const radius = 30; // Item radius
         for (const [id, node] of this.state.nodes.entries()) {
@@ -623,7 +705,7 @@ class CanvasEditor {
         }
         return null;
     }
-    
+
     /**
      * RENDERING
      * Main render method that redraws the entire canvas
@@ -632,23 +714,23 @@ class CanvasEditor {
     render() {
         // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
         // Save context
         this.ctx.save();
-        
+
         // Apply camera transform: translate to center, scale, then offset by camera center
         this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
         this.ctx.scale(this.state.camera.zoom, this.state.camera.zoom);
         this.ctx.translate(-this.state.camera.centerX, -this.state.camera.centerY);
-        
+
         // Draw items
         this.drawNodes();
-        
+
         // Restore context
         this.ctx.restore();
-        
+
     }
-    
+
     /**
      * Draws all items (lights and materials) on the canvas
      * @returns {void}
@@ -658,7 +740,7 @@ class CanvasEditor {
             this.drawNode(id);
         }
     }
-    
+
     /**
      * Draws a single item (light or material) with selection ring if selected
      * @param {Object} info - The item to draw
@@ -676,11 +758,11 @@ class CanvasEditor {
             ...this.state.nodes.get(id)
         };
         const radius = 30;
-        
+
         this.ctx.beginPath();
         this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
         // this.ctx.color = info.color;
-        
+
         if (info.type === 'light') {
             // Light: filled circle with color
             // this.ctx.fillStyle = item.color || '#ffeb3b';
@@ -694,14 +776,14 @@ class CanvasEditor {
             this.ctx.lineWidth = 2 / this.state.camera.zoom;
             this.ctx.stroke();
         }
-        
+
         // Draw title
         this.ctx.fillStyle = info.type === 'light' ? 'black' : '#333';
         this.ctx.font = `${14 / this.state.camera.zoom}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText(info.title, info.x, info.y);
-        
+
         // Draw selection ring if selected
         if (this.state.interaction.selectedId === info.id) {
             this.ctx.beginPath();
@@ -712,7 +794,7 @@ class CanvasEditor {
             this.ctx.stroke();
             this.ctx.setLineDash([]);
         }
-    }    
+    }
     /**
      * COMMON PRACTICE 6: Cleanup Method
      * Important for preventing memory leaks when destroying the instance
@@ -722,7 +804,7 @@ class CanvasEditor {
         this.canvas.removeEventListener('mousedown', this.handleCanvasMouseDown);
         this.canvas.removeEventListener('mousemove', this.handleCanvasMouseMove);
         // ... remove all other listeners
-        
+
         // Clear any intervals/timeouts
         // Clean up any other resources
     }

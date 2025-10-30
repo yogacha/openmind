@@ -15,7 +15,7 @@ function randId() { // generate random ID
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
-function downloadFile(filename, content) {
+function downloadJSONFile(filename, content) {
     const blob = new Blob([content], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -30,7 +30,7 @@ export {
     vecSub,
     antipode,
     randId,
-    downloadFile,
+    downloadJSONFile,
 };
 
 export default {
@@ -38,5 +38,5 @@ export default {
     vecSub,
     antipode,
     randId,
-    downloadFile,
+    downloadJSONFile,
 };
