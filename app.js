@@ -155,28 +155,18 @@ class CanvasEditor {
         console.log('setCamera', centerX, centerY, zoom);
         this.render();
     }
-
+    resetCamera(margin = 100) {
+        const rect = this.workspace.getBoundingRect();
+        let ratio = Math.min(
+            this.canvas.width / (rect.width + margin * 2),
+            this.canvas.height / (rect.height + margin * 2)
+        );
+        ratio = Math.min(ratio, 1);
+        this.setCamera(rect.centerX, rect.centerY, ratio);
+    }
     // ============================================================================
     // EVENT HANDLERS
     // ============================================================================
-    _mouse(event) { // Returns position relative to canvas center
-        return {
-            x: event.clientX - this.canvas.width / 2,
-            y: event.clientY - this.canvas.height / 2
-        };
-    }
-    _canvas2coord(canvasCenterPoint) { // Convert canvas-center position to coordinates
-        return {
-            x: this.state.camera.centerX + canvasCenterPoint.x / this.state.camera.zoom,
-            y: this.state.camera.centerY + canvasCenterPoint.y / this.state.camera.zoom
-        };
-    }
-    _coord2canvas(worldPoint) { // Convert coordinates to canvas-center position
-        return {
-            x: (worldPoint.x - this.state.camera.centerX) * this.state.camera.zoom,
-            y: (worldPoint.y - this.state.camera.centerY) * this.state.camera.zoom
-        };
-    }
     /**
      * CANVAS EVENT HANDLERS
      */
@@ -187,7 +177,7 @@ class CanvasEditor {
         const coord = this._canvas2coord(mouse);
 
         // Check if clicked on an item
-        const clickedNodeId = this.getIdAtPosition(coord.x, coord.y);
+        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y);
 
         if (clickedNodeId) {
             this.state.interaction.selectedId = clickedNodeId;
@@ -231,11 +221,10 @@ class CanvasEditor {
             const coord = this._canvas2coord(mouse);
 
             // Update position in the nodes Map
-            const nodeData = this.workspace._nodes.get(this.state.interaction.draggedId);
+            const nodeData = this.workspace.getNode(this.state.interaction.draggedId);
 
             if (!nodeData) {
                 console.warn('nodeData not found for id:', this.state.interaction.draggedId);
-                console.log('Available node IDs:', Array.from(this.workspace._nodes.keys()));
                 console.log('draggedNodeId:', this.state.interaction.draggedId);
                 return;
             }
@@ -270,7 +259,7 @@ class CanvasEditor {
         const coord = this._canvas2coord(this._mouse(event));
 
         // Check if right-clicked on an item
-        const clickedNodeId = this.getIdAtPosition(coord.x, coord.y);
+        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y);
 
         if (clickedNodeId) {
             // Show item context menu
@@ -354,10 +343,10 @@ class CanvasEditor {
 
         switch (action) {
             case 'add-light':
-                this.addLight(coord.x, coord.y);
+                this.addItem(coord.x, coord.y, 'light');
                 break;
             case 'add-material':
-                this.addMaterial(coord.x, coord.y);
+                this.addItem(coord.x, coord.y, 'material');
                 break;
             case 'paste':
                 this.pasteItem(coord.x, coord.y);
@@ -446,6 +435,9 @@ class CanvasEditor {
                     this.toggleLight();
                 }
                 break;
+            case 'r':
+                this.resetCamera();
+                break;
         }
     }
 
@@ -527,8 +519,7 @@ class CanvasEditor {
         this.workspace = Workspace.fromObject(JSON.parse(content));
 
         this.workspace.initializeNodes(this.world);
-
-        this.setCamera(0, 0, 1);
+        this.resetCamera();
         this.render();
 
         // Complete the sequential file opening process
@@ -551,24 +542,14 @@ class CanvasEditor {
     // ACTION METHODS (TO BE IMPLEMENTED)
     // ============================================================================
 
-    addLight(x, y) {
-        const item = this.world.newItem('light');
+    addItem(x, y, type) {
+        const item = this.world.newItem(type);
         // add to attention
         this.workspace.add(item, this.world);
         this.workspace.setStyle(item.id, x, y);
 
         this.render();
-        console.log('Added light:', item.id);
-    }
-
-    addMaterial(x, y) {
-        const item = this.world.newItem('material');
-        // add to attention
-        this.workspace.add(item, this.world);
-        this.workspace.setStyle(item.id, x, y);
-
-        this.render();
-        console.log('Added material:', item.id);
+        console.log('Added ' + type + ':', item.id);
     }
 
     pasteItem(x, y) {
@@ -593,7 +574,7 @@ class CanvasEditor {
             return;
         }
 
-        // Remove from workspace (this should handle _nodes cleanup via _updateNodes)
+        // Remove from workspace (this should handle nodes cleanup via _updateNodes)
         this.workspace.delete(itemId, this.world);
         
         // Clear selection
@@ -606,7 +587,8 @@ class CanvasEditor {
     }
 
     removeFromAttention() {
-        // TODO: Remove item from attention (make visible-only)
+        this.workspace.hide(this.state.interaction.selectedId, this.world);
+        this.render();
     }
 
     changeItemColor() {
@@ -616,11 +598,6 @@ class CanvasEditor {
     unlinkFromShadow() {
         // TODO: Unlink material from shadow
     }
-
-    // _addAttention(item) {
-    //     this.workspace.add(item.id, item.type);
-    //     this.workspace._nodes.set(item.id, {
-    // }
 
     editSelectedNode() {
         if (!this.state.interaction.selectedId) return;
@@ -632,7 +609,7 @@ class CanvasEditor {
         }
 
         // Add item to workspace when editing (if not already there)
-        this.workspace.add(selectedItem.id, this.world);
+        this.workspace.add(selectedItem, this.world);
         
         // Re-render to show any newly added nodes
         this.render();
@@ -784,25 +761,9 @@ class CanvasEditor {
         console.log('Saved changes for item:', item.id);
     }
 
-
-
-    getIdAtPosition(worldX, worldY) {
-        const radius = 30; // Item radius
-        for (const [id, node] of this.workspace._nodes.entries()) {
-            const distance = Math.sqrt(
-                Math.pow(worldX - node.x, 2) + Math.pow(worldY - node.y, 2)
-            );
-            if (distance <= radius) {
-                return id
-            }
-        }
-        return null;
-    }
-
     /**
      * RENDERING
      * Main render method that redraws the entire canvas
-     * @returns {void}
      */
     render() {
         // Clear canvas
@@ -826,26 +787,13 @@ class CanvasEditor {
 
     /**
      * Draws all items (lights and materials) on the canvas
-     * @returns {void}
      */
     drawNodes() {
         for (const info of this.workspace.nodes(this.world)) {
             this.drawNode(info);
-        // for (const id of this.workspace._nodes.keys()) {
-        //     this.drawNode(id);
         }
     }
 
-    /**
-     * Draws a single item (light or material) with selection ring if selected
-     * @param {Object} info - The item to draw
-     * @param {string} info.type - 'light' or 'material'
-     * @param {number} info.x - X coordinate
-     * @param {number} info.y - Y coordinate
-     * @param {string} info.title - Display title
-     * @param {string} [info.color] - Color for light items
-     * @returns {void}
-     */
     drawNode(info) {
         const radius = 30;
 
@@ -862,7 +810,7 @@ class CanvasEditor {
         }
 
         // Draw title
-        this.ctx.fillStyle = info.type === 'light' ? 'black' : '#333';
+        this.ctx.fillStyle = '#333';
         this.ctx.font = `${14 / this.state.camera.zoom}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
@@ -891,6 +839,24 @@ class CanvasEditor {
 
         // Clear any intervals/timeouts
         // Clean up any other resources
+    }
+    _mouse(event) { // Returns position relative to canvas center
+        return {
+            x: event.clientX - this.canvas.width / 2,
+            y: event.clientY - this.canvas.height / 2
+        };
+    }
+    _canvas2coord(canvasCenterPoint) { // Convert canvas-center position to coordinates
+        return {
+            x: this.state.camera.centerX + canvasCenterPoint.x / this.state.camera.zoom,
+            y: this.state.camera.centerY + canvasCenterPoint.y / this.state.camera.zoom
+        };
+    }
+    _coord2canvas(worldPoint) { // Convert coordinates to canvas-center position
+        return {
+            x: (worldPoint.x - this.state.camera.centerX) * this.state.camera.zoom,
+            y: (worldPoint.y - this.state.camera.centerY) * this.state.camera.zoom
+        };
     }
 }
 

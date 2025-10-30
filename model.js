@@ -154,7 +154,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.lights = new Map();
         /** @type {Set<id>} ids of items (lights & materials) in attention */
         this.items = new Set();
-
+        /** @type {Map<id, {x: number, y: number, color: string}>} */
         this._nodes = new Map(); // id => {x, y, color}, layout info for items in attention (future)
     }
     toObject() {
@@ -177,8 +177,12 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     }
     initializeNodes(world) { // random position
         // Remove items not in world
+        const itemsToDelete = [];
         for (const id of this.items) {
-            if (!world.has(id)) this.delete(id, world);
+            if (!world.has(id)) itemsToDelete.push(id);
+        }
+        for (const id of itemsToDelete) {
+            this.delete(id, world);
         }
         this._updateNodes(world);
     }
@@ -236,9 +240,23 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     /** @type {(id: id, world: World) => void} */
     delete(id, world) {
         world.delete(id); // remove from world first
+        this.hide(id, world);
+    }
+    hide(id, world) { // remove from attention, but keep in world
         this.lights.delete(id);
         this.items.delete(id);
         this._updateNodes(world);
+    }
+    getNode(id) { return this._nodes.get(id); }
+    getIdAtPosition(x, y, radius = 30) {
+        for (const [id, info] of this._nodes.entries()) {
+            const dx = info.x - x;
+            const dy = info.y - y;
+            if (dx * dx + dy * dy <= radius * radius) {
+                return id;
+            }
+        }
+        return null;
     }
     setStyle(id, x, y, colour = null) {
         if (this._nodes.has(id)) {
@@ -269,9 +287,30 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             }
         }
     }
+    getBoundingRect() {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        if (this._nodes.size === 0) {
+            minX = -100; minY = -100; maxX = 100; maxY = 100;
+        }
+        for (const info of this._nodes.values()) {
+            minX = Math.min(minX, info.x);
+            minY = Math.min(minY, info.y);
+            maxX = Math.max(maxX, info.x);
+            maxY = Math.max(maxY, info.y);
+        }
+        return {
+            centerX: (minX + maxX) / 2,
+            centerY: (minY + maxY) / 2,
+            width: maxX - minX,
+            height: maxY - minY,
+        }
+    }
+
     *curves(world) {
         // TODO: yield curves
     }
+
+
 
 }
 
