@@ -100,22 +100,16 @@ class World {
         world.projections = Relations.fromObject(obj.projections);
         return world;
     }
-    has(id) {
-        return this.items.has(id);
-    }
-    getItem(id) {
-        return this.items.get(id);
-    }
-    addItem(type) {
-        // make sure id is unique
+    newItem(type) {
         let id = randId();
-        while (this.items.has(id)) { id = randId(); }
-        const item = new Item(id, type);
-        this.items.set(id, item);
-        return item;
+        while (this.has(id)) { id = randId(); }
+        return new Item(id, type);
     }
-    removeItem(id) {
-        const exist = this.items.has(id);
+    has(id) { return this.items.has(id); }
+    get(id) { return this.items.get(id); }
+    add(item) { this.items.set(item.id, item); }
+    delete(id) {
+        const exist = this.has(id);
 
         if (exist) {
             this.items.delete(id); // remove item from world
@@ -184,7 +178,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     initializeNodes(world) { // random position
         // Remove items not in world
         for (const id of this.items) {
-            if (!world.items.has(id)) this.delete(id, world);
+            if (!world.has(id)) this.delete(id, world);
         }
         this._updateNodes(world);
     }
@@ -200,7 +194,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             if (this._nodes.has(id)) continue;
             this._nodes.set(id, {
                 x: Math.random() * 800 - 400,
-                y: Math.random() * 600 - 300, 
+                y: Math.random() * 600 - 300,
                 color: this.colour(id)
             });
         }
@@ -228,17 +222,20 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             }
         }
     }
-    add(id, world) {
-        if (this.items.has(id)) {
-            return; // already in attention
-        }
-        if (world.getItem(id).type === 'light') {
+    /** @type {(id: id, world: World) => void} */
+    add(item, world) {
+        const id = item.id;
+        if (this.items.has(id)) return; // already in attention
+        world.add(item); // add to world first
+        if (item.type === 'light') {
             this.lights.set(id, 'Off'); // default light status is Off
         }
         this.items.add(id);
         this._updateNodes(world);
     }
+    /** @type {(id: id, world: World) => void} */
     delete(id, world) {
+        world.delete(id); // remove from world first
         this.lights.delete(id);
         this.items.delete(id);
         this._updateNodes(world);
@@ -252,8 +249,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         for (const [id, info] of this._nodes.entries()) {
             yield {
                 id: id,
-                type: world.getItem(id).type,
-                title: world.getItem(id).title,
+                type: world.get(id).type,
+                title: world.get(id).title,
                 x: info.x,
                 y: info.y,
                 color: info.color.slice(0, 7) + (this.items.has(id) ? 'ff' : '88'),
@@ -273,7 +270,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
     }
     *curves(world) {
-    // TODO: yield curves
+        // TODO: yield curves
     }
 
 }

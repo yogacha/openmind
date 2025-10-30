@@ -165,13 +165,13 @@ class CanvasEditor {
             y: event.clientY - this.canvas.height / 2
         };
     }
-    _canvas2world(canvasCenterPoint) { // Convert canvas-center coordinates to world coordinates
+    _canvas2coord(canvasCenterPoint) { // Convert canvas-center position to coordinates
         return {
             x: this.state.camera.centerX + canvasCenterPoint.x / this.state.camera.zoom,
             y: this.state.camera.centerY + canvasCenterPoint.y / this.state.camera.zoom
         };
     }
-    _world2canvas(worldPoint) { // Convert world coordinates to canvas-center coordinates
+    _coord2canvas(worldPoint) { // Convert coordinates to canvas-center position
         return {
             x: (worldPoint.x - this.state.camera.centerX) * this.state.camera.zoom,
             y: (worldPoint.y - this.state.camera.centerY) * this.state.camera.zoom
@@ -184,10 +184,10 @@ class CanvasEditor {
         if (event.button !== 0) return; // Only handle left mouse button
 
         const mouse = this._mouse(event);
-        const worldCoord = this._canvas2world(mouse);
+        const coord = this._canvas2coord(mouse);
 
         // Check if clicked on an item
-        const clickedNodeId = this.getItemIdAtPosition(worldCoord.x, worldCoord.y);
+        const clickedNodeId = this.getIdAtPosition(coord.x, coord.y);
 
         if (clickedNodeId) {
             this.state.interaction.selectedId = clickedNodeId;
@@ -228,7 +228,7 @@ class CanvasEditor {
             // Update cursor
             this.canvas.style.cursor = 'move';
             // Update item position
-            const worldCoord = this._canvas2world(mouse);
+            const coord = this._canvas2coord(mouse);
 
             // Update position in the nodes Map
             const nodeData = this.workspace._nodes.get(this.state.interaction.draggedId);
@@ -239,7 +239,7 @@ class CanvasEditor {
                 console.log('draggedNodeId:', this.state.interaction.draggedId);
                 return;
             }
-            this.workspace.setStyle(this.state.interaction.draggedId, worldCoord.x, worldCoord.y)
+            this.workspace.setStyle(this.state.interaction.draggedId, coord.x, coord.y)
 
             this.render();
         }
@@ -267,10 +267,10 @@ class CanvasEditor {
     handleCanvasContextMenu(event) {
         event.preventDefault();
         // Convert to world coordinates
-        const worldCoord = this._canvas2world(this._mouse(event));
+        const coord = this._canvas2coord(this._mouse(event));
 
         // Check if right-clicked on an item
-        const clickedNodeId = this.getItemIdAtPosition(worldCoord.x, worldCoord.y);
+        const clickedNodeId = this.getIdAtPosition(coord.x, coord.y);
 
         if (clickedNodeId) {
             // Show item context menu
@@ -350,17 +350,17 @@ class CanvasEditor {
     }
 
     executeContextAction(action, event) {
-        const worldCoord = this._canvas2world(this._mouse(event));
+        const coord = this._canvas2coord(this._mouse(event));
 
         switch (action) {
             case 'add-light':
-                this.addLight(worldCoord.x, worldCoord.y);
+                this.addLight(coord.x, coord.y);
                 break;
             case 'add-material':
-                this.addMaterial(worldCoord.x, worldCoord.y);
+                this.addMaterial(coord.x, coord.y);
                 break;
             case 'paste':
-                this.pasteItem(worldCoord.x, worldCoord.y);
+                this.pasteItem(coord.x, coord.y);
                 break;
             case 'copy':
                 this.copySelectedItem();
@@ -441,7 +441,7 @@ class CanvasEditor {
                 break;
             case 'l':
                 const selectedItem = this.state.interaction.selectedId ?
-                    this.world.getItem(this.state.interaction.selectedId) : null;
+                    this.world.get(this.state.interaction.selectedId) : null;
                 if (selectedItem?.type === 'light') {
                     this.toggleLight();
                 }
@@ -552,10 +552,9 @@ class CanvasEditor {
     // ============================================================================
 
     addLight(x, y) {
-        // Add to world data
-        const item = this.world.addItem('light');
+        const item = this.world.newItem('light');
         // add to attention
-        this.workspace.add(item.id, this.world);
+        this.workspace.add(item, this.world);
         this.workspace.setStyle(item.id, x, y);
 
         this.render();
@@ -563,10 +562,9 @@ class CanvasEditor {
     }
 
     addMaterial(x, y) {
-        // Add to world data
-        const item = this.world.addItem('material');
+        const item = this.world.newItem('material');
         // add to attention
-        this.workspace.add(item.id, this.world);
+        this.workspace.add(item, this.world);
         this.workspace.setStyle(item.id, x, y);
 
         this.render();
@@ -588,16 +586,13 @@ class CanvasEditor {
         }
 
         const itemId = this.state.interaction.selectedId;
-        const item = this.world.getItem(itemId);
+        const item = this.world.get(itemId);
         
         if (!item) {
             console.warn('Selected item not found in world:', itemId);
             return;
         }
 
-        // Remove from world (this also removes all projections/attachments)
-        this.world.removeItem(itemId);
-        
         // Remove from workspace (this should handle _nodes cleanup via _updateNodes)
         this.workspace.delete(itemId, this.world);
         
@@ -630,7 +625,7 @@ class CanvasEditor {
     editSelectedNode() {
         if (!this.state.interaction.selectedId) return;
         
-        const selectedItem = this.world.getItem(this.state.interaction.selectedId);
+        const selectedItem = this.world.get(this.state.interaction.selectedId);
         if (!selectedItem) {
             console.warn('Selected item not found in world:', this.state.interaction.selectedId);
             return;
@@ -767,7 +762,7 @@ class CanvasEditor {
     saveItemChanges() {
         if (!this.state.ui.editingItemId) return;
 
-        const item = this.world.getItem(this.state.ui.editingItemId);
+        const item = this.world.get(this.state.ui.editingItemId);
         if (!item) {
             console.warn('Item to save not found:', this.state.ui.editingItemId);
             return;
@@ -791,7 +786,7 @@ class CanvasEditor {
 
 
 
-    getItemIdAtPosition(worldX, worldY) {
+    getIdAtPosition(worldX, worldY) {
         const radius = 30; // Item radius
         for (const [id, node] of this.workspace._nodes.entries()) {
             const distance = Math.sqrt(
@@ -852,11 +847,6 @@ class CanvasEditor {
      * @returns {void}
      */
     drawNode(info) {
-        // const info = {
-        //     id: id,
-        //     ...this.world.getItem(id),
-        //     ...this.workspace._nodes.get(id)
-        // };
         const radius = 30;
 
         this.ctx.beginPath();
