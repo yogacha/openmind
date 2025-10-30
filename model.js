@@ -156,11 +156,13 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.lights = new Map();
         /** @type {Set<id>} ids of items (lights & materials) in attention */
         this.items = new Set();
+        // this._nodes
     }
     toObject() {
         return {
             lights: Array.from(this.lights.entries()).map(([id, status]) => ({ id, status })),
             items: Array.from(this.items),
+            // nodes: 
         };
     }
     static fromObject(obj) {
@@ -171,8 +173,17 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         for (const id of obj.items) {
             ws.items.add(id);
         }
+        // TODO: nodes: 
         return ws;
     }
+    // TODO: sync(world) {
+    // sync workspace with world, 
+    // 1. remove items not in world
+    // 2. calculate layout for items in attention (this._nodes)
+    // 2.1 if layout exists, keep it
+    // 2.2 if not, set random x,y & default color
+    // }
+    // TODO: add(id, world)
     add(id, type) {
         if (this.items.has(id)) {
             return; // already in attention
@@ -182,6 +193,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         this.items.add(id);
     }
+    // TODO: delete(id, world)
     delete(id) {
         this.lights.delete(id);
         this.items.delete(id);

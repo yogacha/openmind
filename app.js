@@ -650,6 +650,7 @@ class CanvasEditor {
     }
 
     initializeNodes() { // random position
+        this.state.nodes.clear();
         // Initialize nodes for workspace items
         for (const id of this.workspace.items) {
             if (this.workspace.lights.has(id)) { // randomize light position in outer region
@@ -674,7 +675,7 @@ class CanvasEditor {
         const worldText = JSON.stringify(this.world.toObject(), null, 2);
 
         // Determine filenames
-        const worldFilename = this.status + '.world.json';
+        const worldFilename = 'world.json';
         const workspaceInput = document.getElementById('workspace-input');
         const workspaceFilename = workspaceInput.files.length > 0 ? workspaceInput.files[0].name : 'workspace.json';
 
