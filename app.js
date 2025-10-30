@@ -411,7 +411,7 @@ class CanvasEditor {
         switch (shortcut) {
             case 'ctrl+s':
                 event.preventDefault();
-                this.saveWorkspace();
+                this.download();
                 break;
             case 'ctrl+o':
                 event.preventDefault();
@@ -453,12 +453,10 @@ class CanvasEditor {
         return parts.join('+');
     }
     
-    /**
-     * FILE HANDLING
-     */
     handleFileSelect(event) {
         const files = event.target.files;
         if (files.length > 0) {
+            /** @type {File} */
             const file = files[0];
             const fileName = file.name;
             
@@ -470,6 +468,7 @@ class CanvasEditor {
             console.log('Updated page title to:', displayName);
             
             // TODO: Process file content (load workspace data)
+
         }
     }
     
@@ -545,8 +544,24 @@ class CanvasEditor {
         // TODO: Toggle light on/off status
     }
     
-    saveWorkspace() {
-        // TODO: Save current state to files
+    download() {
+        // Prepare data for saving
+        const workspaceText = JSON.stringify(this.workspace.toObject(), null, 2);
+        const worldText = JSON.stringify(this.world.toObject(), null, 2);
+        
+        // Determine filenames
+        const fileInput = document.getElementById('file-input');
+        let workspaceFilename = 'workspace.json';
+        
+        if (fileInput.files.length > 0) {
+            // Use original filename if available
+            const originalFile = fileInput.files[0];
+            workspaceFilename = originalFile.name;
+        }
+        
+        utils.downloadFile('world.json', worldText);
+        utils.downloadFile(workspaceFilename, workspaceText);
+
         console.log('Workspace saved!');
     }
     
@@ -627,7 +642,7 @@ class CanvasEditor {
         this.ctx.translate(-this.state.camera.centerX, -this.state.camera.centerY);
         
         // Draw items
-        this.drawItems();
+        this.drawNodes();
         
         // Restore context
         this.ctx.restore();
@@ -638,9 +653,9 @@ class CanvasEditor {
      * Draws all items (lights and materials) on the canvas
      * @returns {void}
      */
-    drawItems() {
+    drawNodes() {
         for (const id of this.state.nodes.keys()) {
-            this.drawItem(id);
+            this.drawNode(id);
         }
     }
     
@@ -654,7 +669,7 @@ class CanvasEditor {
      * @param {string} [info.color] - Color for light items
      * @returns {void}
      */
-    drawItem(id) {
+    drawNode(id) {
         const info = {
             id: id,
             ...this.world.getItem(id),
@@ -664,6 +679,7 @@ class CanvasEditor {
         
         this.ctx.beginPath();
         this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
+        // this.ctx.color = info.color;
         
         if (info.type === 'light') {
             // Light: filled circle with color
