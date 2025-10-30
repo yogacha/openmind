@@ -46,7 +46,10 @@ class CanvasEditor {
                 contextMenuVisible: false,
                 modalOpen: false,
                 openingFiles: false,
-                openingStep: null
+                openingStep: null,
+                editingItemId: null,
+                originalTitle: null,
+                originalBody: null
             }
         };
 
@@ -146,7 +149,6 @@ class CanvasEditor {
 
     setupWindowEvents() {
         window.addEventListener('resize', this.handleWindowResize.bind(this));
-        window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
     }
 
     // ===============================
@@ -159,7 +161,7 @@ class CanvasEditor {
         console.log('setCamera', centerX, centerY, zoom);
         this.render();
     }
-    setItemStyle(id, x, y, color) {
+    setNodeStyle(id, x, y, color) {
         const nodeData = this.state.nodes.get(id);
         nodeData.x = x;
         nodeData.y = y;
@@ -328,7 +330,12 @@ class CanvasEditor {
             this.handleSearchItemClick(target, event);
         } else if (!target.closest('.modal, .context-menu, .side-panel')) {
             // Click outside modals/menus - close them
-            this.closeAllPopups();
+            // Save editor changes if panel is open
+            if (this.state.ui.editingItemId) {
+                this.saveItemChanges();
+            } else {
+                this.closeAllPopups();
+            }
         }
     }
 
@@ -385,6 +392,9 @@ class CanvasEditor {
             case 'unlink':
                 this.unlinkFromShadow();
                 break;
+            case 'edit':
+                this.editSelectedNode();
+                break;
         }
 
         this.hideContextMenu();
@@ -428,17 +438,21 @@ class CanvasEditor {
                 this.openFiles();
                 break;
             case 'delete':
-                if (this.state.interaction.selectedId) {
+                if (this.state.interaction.selectedId && !this.state.ui.editingItemId) {
                     this.deleteSelectedItem();
                 }
                 break;
             case 'enter':
-                if (this.state.interaction.selectedId) {
-                    this.editSelectedItem();
+                if (this.state.interaction.selectedId && !this.state.ui.editingItemId) {
+                    this.editSelectedNode();
                 }
                 break;
             case 'escape':
-                this.cancelCurrentOperation();
+                if (this.state.ui.editingItemId) {
+                    this.saveItemChanges();
+                } else {
+                    this.cancelCurrentOperation();
+                }
                 break;
             case 'l':
                 const selectedItem = this.state.interaction.selectedId ?
@@ -548,10 +562,6 @@ class CanvasEditor {
         this.render();
     }
 
-    handleBeforeUnload(event) {
-        // TODO: Warn about unsaved changes if any
-    }
-
     // ============================================================================
     // ACTION METHODS (TO BE IMPLEMENTED)
     // ============================================================================
@@ -604,8 +614,35 @@ class CanvasEditor {
         // TODO: Unlink material from shadow
     }
 
-    editSelectedItem() {
-        // TODO: Open side panel for content editing
+    // _addAttention(item) {
+    //     this.workspace.add(item.id, item.type);
+    //     this.state.nodes.set(item.id, {
+    // }
+
+    editSelectedNode() {
+        if (!this.state.interaction.selectedId) return;
+        
+        const selectedItem = this.world.getItem(this.state.interaction.selectedId);
+        if (!selectedItem) {
+            console.warn('Selected item not found in world:', this.state.interaction.selectedId);
+            return;
+        }
+
+        // Add item to workspace when editing (if not already there)
+        this.workspace.add(selectedItem.id, selectedItem.type);
+        
+        // is always in nodes, thats why we can select
+        const node = this.state.nodes.get(selectedItem.id);
+        this.setNodeStyle(selectedItem.id, node.x, node.y, palette[selectedItem.type][1]);
+        // Re-render to show any newly added nodes
+        this.render();
+
+        console.log('Item added to workspace:', selectedItem.id);
+        
+        // Show side panel
+        this.showEditorPanel(selectedItem);
+        
+        
     }
 
     toggleLight() {
@@ -652,7 +689,16 @@ class CanvasEditor {
     }
 
     cancelCurrentOperation() {
-        // TODO: Cancel any ongoing operation (editing, dragging, etc.)
+        // Cancel dragging
+        this.state.interaction.isPanning = false;
+        this.state.interaction.draggedId = null;
+
+        // Close any open popups
+        this.closeAllPopups();
+        
+        // Clear selection
+        this.state.interaction.selectedId = null;
+        this.render();
     }
 
     closeAllPopups() {
@@ -666,8 +712,12 @@ class CanvasEditor {
         // Hide search dropdown
         document.getElementById('search-dropdown').classList.add('hidden');
 
+        // Hide editor panel
+        document.getElementById('side-panel').classList.add('hidden');
+
         this.state.ui.contextMenuVisible = false;
         this.state.ui.modalOpen = false;
+        this.state.ui.editingItemId = null;
     }
 
     hideContextMenu() {
@@ -692,6 +742,68 @@ class CanvasEditor {
         this.state.ui.contextMenuVisible = true;
         this.state.interaction.selectedId = id;
     }
+
+    showEditorPanel(item) {
+        const panel = document.getElementById('side-panel');
+        const titleInput = document.getElementById('item-title-input');
+        const bodyInput = document.getElementById('item-body-input');
+
+        // Populate form fields
+        titleInput.value = item.title || '';
+        bodyInput.value = item.body || '';
+
+        // Store the item being edited
+        this.state.ui.editingItemId = item.id;
+        this.state.ui.originalTitle = item.title;
+        this.state.ui.originalBody = item.body;
+
+        // Show panel
+        panel.classList.remove('hidden');
+        
+        // Focus on title input
+        setTimeout(() => titleInput.focus(), 100);
+        
+        console.log('Opened editor for item:', item.id);
+    }
+
+    hideEditorPanel() {
+        const panel = document.getElementById('side-panel');
+        panel.classList.add('hidden');
+        
+        // Clear editing state
+        this.state.ui.editingItemId = null;
+        this.state.ui.originalTitle = null;
+        this.state.ui.originalBody = null;
+        
+        console.log('Closed editor panel');
+    }
+
+    saveItemChanges() {
+        if (!this.state.ui.editingItemId) return;
+
+        const item = this.world.getItem(this.state.ui.editingItemId);
+        if (!item) {
+            console.warn('Item to save not found:', this.state.ui.editingItemId);
+            return;
+        }
+
+        const titleInput = document.getElementById('item-title-input');
+        const bodyInput = document.getElementById('item-body-input');
+
+        // Update item data
+        item.title = titleInput.value.trim() || 'Untitled';
+        item.body = bodyInput.value;
+
+        // Re-render to show updated title
+        this.render();
+        
+        // Hide panel
+        this.hideEditorPanel();
+        
+        console.log('Saved changes for item:', item.id);
+    }
+
+
 
     getItemIdAtPosition(worldX, worldY) {
         const radius = 30; // Item radius

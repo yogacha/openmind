@@ -32,6 +32,7 @@
     </div>
     
     <div id="item-context-menu" class="context-menu hidden">
+        <div class="menu-item" data-action="edit">Edit</div>
         <div class="menu-item" data-action="copy">Copy</div>
         <div class="menu-item" data-action="delete">Delete</div>
         <div class="menu-item" data-action="attention-off">Remove from Attention</div>
@@ -52,17 +53,9 @@
     
     <!-- Side Panel for Editing -->
     <div id="side-panel" class="side-panel hidden">
-        <div class="panel-header">
-            <h3 id="panel-title">Edit Item</h3>
-            <button id="panel-close" class="close-btn">&times;</button>
-        </div>
         <div class="panel-content">
             <input type="text" id="item-title-input" placeholder="Item title..." />
             <textarea id="item-body-input" placeholder="Item content (markdown)..."></textarea>
-            <div class="panel-actions">
-                <button id="save-item" class="btn-primary">Save</button>
-                <button id="cancel-edit" class="btn-secondary">Cancel</button>
-            </div>
         </div>
     </div>
     

@@ -174,6 +174,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         return ws;
     }
     add(id, type) {
+        if (this.items.has(id)) {
+            return; // already in attention
+        }
         if (type === 'light') {
             this.lights.set(id, 'Off'); // default light status is Off
         }
