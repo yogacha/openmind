@@ -11,7 +11,7 @@
 import utils from './utils.js';
 import { World, Workspace } from './model.js';
 
-class CanvasEditor {
+export class CanvasEditor {
     constructor() {
         // Initialize state
         this.world = new World();
@@ -146,7 +146,7 @@ class CanvasEditor {
     }
 
     // ===============================
-    // Semantic events
+    // Camera events
     // ===============================
     setCamera(centerX = null, centerY = null, zoom = null) {
         this.state.camera.centerX = centerX ?? this.state.camera.centerX;
@@ -170,78 +170,11 @@ class CanvasEditor {
     /**
      * CANVAS EVENT HANDLERS
      */
-    handleCanvasMouseDown(event) {
-        if (event.button !== 0) return; // Only handle left mouse button
+    handleCanvasMouseDown(event) {}
 
-        const mouse = this._mouse(event);
-        const coord = this._canvas2coord(mouse);
+    handleCanvasMouseMove(event) {}
 
-        // Check if clicked on an item
-        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y);
-
-        if (clickedNodeId) {
-            this.state.interaction.selectedId = clickedNodeId;
-            this.state.interaction.draggedId = clickedNodeId;
-        } else {
-            // Clear selection
-            this.state.interaction.selectedId = null;
-
-            // Start panning
-            this.state.interaction.isPanning = true;
-        }
-
-        // Store drag start position
-        this.state.interaction.dragStart = mouse;
-        this.state.interaction.lastCameraCenterX = this.state.camera.centerX;
-        this.state.interaction.lastCameraCenterY = this.state.camera.centerY;
-
-        this.render();
-    }
-
-    handleCanvasMouseMove(event) {
-        const mouse = this._mouse(event);
-
-        if (this.state.interaction.isPanning) {
-            // Update cursor
-            this.canvas.style.cursor = 'grabbing';
-
-            // Update camera position based on mouse movement
-            const deltaX = (mouse.x - this.state.interaction.dragStart.x) / this.state.camera.zoom;
-            const deltaY = (mouse.y - this.state.interaction.dragStart.y) / this.state.camera.zoom;
-
-            this.setCamera(
-                this.state.interaction.lastCameraCenterX - deltaX,
-                this.state.interaction.lastCameraCenterY - deltaY,
-                null
-            );
-        } else if (this.state.interaction.draggedId) {
-            // Update cursor
-            this.canvas.style.cursor = 'move';
-            // Update item position
-            const coord = this._canvas2coord(mouse);
-
-            // Update position in the nodes Map
-            const nodeData = this.workspace.getNode(this.state.interaction.draggedId);
-
-            if (!nodeData) {
-                console.warn('nodeData not found for id:', this.state.interaction.draggedId);
-                console.log('draggedNodeId:', this.state.interaction.draggedId);
-                return;
-            }
-            this.workspace.setStyle(this.state.interaction.draggedId, coord.x, coord.y)
-
-            this.render();
-        }
-    }
-
-    handleCanvasMouseUp(event) {
-        // Clear drag states
-        this.state.interaction.isPanning = false;
-        this.state.interaction.draggedId = null;
-
-        // Change cursor back
-        this.canvas.style.cursor = 'grab';
-    }
+    handleCanvasMouseUp(event) {}
 
     handleCanvasWheel(event) {
         event.preventDefault();
@@ -252,14 +185,13 @@ class CanvasEditor {
 
         this.setCamera(null, null, newZoom);
     }
+    /** get item id from screen position */
+    getIdAtPosition(event) {}
 
     handleCanvasContextMenu(event) {
         event.preventDefault();
-        // Convert to world coordinates
-        const coord = this._canvas2coord(this._mouse(event));
-
         // Check if right-clicked on an item
-        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y);
+        const clickedNodeId = this.getIdAtPosition(event);
 
         if (clickedNodeId) {
             // Show item context menu
@@ -358,7 +290,7 @@ class CanvasEditor {
                 this.deleteSelectedItem();
                 break;
             case 'attention-off':
-                this.removeFromAttention();
+                this.hideSelectedItem();
                 break;
             case 'change-color':
                 this.changeItemColor();
@@ -367,7 +299,7 @@ class CanvasEditor {
                 this.unlinkFromShadow();
                 break;
             case 'edit':
-                this.editSelectedNode();
+                this.editSelectedItem();
                 break;
         }
 
@@ -418,7 +350,7 @@ class CanvasEditor {
                 break;
             case 'enter':
                 if (this.state.interaction.selectedId && !this.state.ui.editingItemId) {
-                    this.editSelectedNode();
+                    this.editSelectedItem();
                 }
                 break;
             case 'escape':
@@ -464,71 +396,8 @@ class CanvasEditor {
         // Trigger world file selection
         document.getElementById('world-input').click();
     }
-
-    async handleWorldSelect(event) {
-        const files = event.target.files;
-        const file = files[0];
-        
-        if (!file) {
-            // User cancelled world selection
-            if (this.state.ui.openingFiles) {
-                console.log('World file selection cancelled - aborting file opening');
-                this.state.ui.openingFiles = false;
-                this.state.ui.openingStep = null;
-            }
-            return;
-        }
-
-        this.state.name.world = file.name.replace(/\.world\.json$/i, '') || 'Unknown World';
-        const content = await file.text();
-        this.world = World.fromObject(JSON.parse(content));
-        console.log('Loaded world:', this.state.name.world);
-
-        // If we're in sequential opening mode, automatically proceed to workspace
-        if (this.state.ui.openingFiles && this.state.ui.openingStep === 'world') {
-            console.log('Opening files: Step 2 - Select Workspace file');
-            this.state.ui.openingStep = 'workspace';
-            
-            // Small delay to ensure world dialog is fully closed
-            setTimeout(() => {
-                document.getElementById('workspace-input').click();
-            }, 100);
-        }
-    } 
-    async handleWorkspaceSelect(event) {
-        const files = event.target.files;
-        const file = files[0];
-        
-        if (!file) {
-            // User cancelled workspace selection
-            if (this.state.ui.openingFiles) {
-                console.log('Workspace file selection cancelled - aborting file opening');
-                this.state.ui.openingFiles = false;
-                this.state.ui.openingStep = null;
-            }
-            return;
-        }
-
-        this.state.name.workspace = file.name.replace(/\.workspace\.json$/i, '') || '???';
-
-        document.title = this.state.name.workspace + ' for ' + this.state.name.world + ' - Canvas Editor';
-
-        console.log('Loaded workspace:', file.name);
-
-        const content = await file.text();
-        this.workspace = Workspace.fromObject(JSON.parse(content));
-
-        this.workspace.initializeNodes(this.world);
-        this.resetCamera();
-        this.render();
-
-        // Complete the sequential file opening process
-        if (this.state.ui.openingFiles && this.state.ui.openingStep === 'workspace') {
-            console.log('File opening completed successfully');
-            this.state.ui.openingFiles = false;
-            this.state.ui.openingStep = null;
-        }
-    }
+    async handleWorldSelect(event) {}
+    async handleWorkspaceSelect(event) {}
 
     /**
      * WINDOW EVENT HANDLERS
@@ -542,15 +411,7 @@ class CanvasEditor {
     // ACTION METHODS (TO BE IMPLEMENTED)
     // ============================================================================
 
-    addItem(x, y, type) {
-        const item = this.world.newItem(type);
-        // add to attention
-        this.workspace.add(item, this.world);
-        this.workspace.setStyle(item.id, x, y);
-
-        this.render();
-        console.log('Added ' + type + ':', item.id);
-    }
+    addItem(x, y, type) {}
 
     pasteItem(x, y) {
         // TODO: Paste copied item
@@ -560,36 +421,11 @@ class CanvasEditor {
         // TODO: Copy selected item to clipboard state
     }
 
-    deleteSelectedItem() {
-        if (!this.state.interaction.selectedId) {
-            console.log('No item selected for deletion');
-            return;
-        }
+    deleteSelectedItem() {}
 
-        const itemId = this.state.interaction.selectedId;
-        const item = this.world.get(itemId);
-        
-        if (!item) {
-            console.warn('Selected item not found in world:', itemId);
-            return;
-        }
+    hideSelectedItem() {}
 
-        // Remove from workspace (this should handle nodes cleanup via _updateNodes)
-        this.workspace.delete(itemId, this.world);
-        
-        // Clear selection
-        this.state.interaction.selectedId = null;
-        
-        // Re-render to show changes
-        this.render();
-        
-        console.log('Deleted item:', itemId, 'Type:', item.type);
-    }
-
-    removeFromAttention() {
-        this.workspace.hide(this.state.interaction.selectedId, this.world);
-        this.render();
-    }
+    saveItemChanges() {}
 
     changeItemColor() {
         // TODO: Show color picker for light items
@@ -599,48 +435,11 @@ class CanvasEditor {
         // TODO: Unlink material from shadow
     }
 
-    editSelectedNode() {
-        if (!this.state.interaction.selectedId) return;
-        
-        const selectedItem = this.world.get(this.state.interaction.selectedId);
-        if (!selectedItem) {
-            console.warn('Selected item not found in world:', this.state.interaction.selectedId);
-            return;
-        }
+    editSelectedItem() {}
 
-        // Add item to workspace when editing (if not already there)
-        this.workspace.add(selectedItem, this.world);
-        
-        // Re-render to show any newly added nodes
-        this.render();
+    toggleLight() {}
 
-        console.log('Item added to workspace:', selectedItem.id);
-        
-        // Show side panel
-        this.showEditorPanel(selectedItem);
-        
-        
-    }
-
-    toggleLight() {
-        // TODO: Toggle light on/off status
-    }
-
-    download() {
-        // Prepare data for saving
-        const workspaceText = JSON.stringify(this.workspace.toObject(), null, 2);
-        const worldText = JSON.stringify(this.world.toObject(), null, 2);
-
-        // Determine filenames
-        const worldFilename = 'world.json';
-        const workspaceInput = document.getElementById('workspace-input');
-        const workspaceFilename = workspaceInput.files.length > 0 ? workspaceInput.files[0].name : 'workspace.json';
-
-        utils.downloadJSONFile(worldFilename, worldText);
-        utils.downloadJSONFile(workspaceFilename, workspaceText);
-
-        console.log('Workspace saved!');
-    }
+    download() {}
 
     showHelpModal() {
         // TODO: Display help modal
@@ -734,31 +533,6 @@ class CanvasEditor {
         this.state.ui.originalBody = null;
         
         console.log('Closed editor panel');
-    }
-
-    saveItemChanges() {
-        if (!this.state.ui.editingItemId) return;
-
-        const item = this.world.get(this.state.ui.editingItemId);
-        if (!item) {
-            console.warn('Item to save not found:', this.state.ui.editingItemId);
-            return;
-        }
-
-        const titleInput = document.getElementById('item-title-input');
-        const bodyInput = document.getElementById('item-body-input');
-
-        // Update item data
-        item.title = titleInput.value.trim() || 'Untitled';
-        item.body = bodyInput.value;
-
-        // Re-render to show updated title
-        this.render();
-        
-        // Hide panel
-        this.hideEditorPanel();
-        
-        console.log('Saved changes for item:', item.id);
     }
 
     /**
@@ -860,45 +634,6 @@ class CanvasEditor {
     }
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-/**
- * COMMON PRACTICE 7: Debounce for Performance
- * Use for events that fire frequently (resize, scroll, input)
- */
-function debounce(func, delay) {
-    let timeoutId;
-    return function (...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func.apply(this, args), delay);
-    };
-}
-
-/**
- * COMMON PRACTICE 8: Throttle for Performance
- * Use for events that need regular updates but not every frame
- */
-function throttle(func, limit) {
-    let inThrottle;
-    return function (...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
-    };
-}
-
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
-
-// Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    window.canvasEditor = new CanvasEditor();
-});
 
 /**
  * COMMON PRACTICES DEMONSTRATED:
