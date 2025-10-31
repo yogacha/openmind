@@ -198,7 +198,7 @@ export class CanvasEditor {
 
         this.setCamera(null, null, newZoom);
     }
-    /** get item id from screen position */
+
     handleCanvasContextMenu(event) {
         event.preventDefault();
         // Check if right-clicked on an item
@@ -208,10 +208,13 @@ export class CanvasEditor {
         if (clickedNodeId) {
             // Show item context menu
             this.showItemContextMenu(event.clientX, event.clientY, clickedNodeId);
+            this.state.interaction.selectedId = clickedNodeId;
         } else {
             // Show canvas context menu
             this.showCanvasContextMenu(event.clientX, event.clientY);
         }
+
+        this.render();
     }
 
     handleCanvasDoubleClick(event) {
@@ -300,14 +303,14 @@ export class CanvasEditor {
             case 'delete':
                 this.deleteSelectedItem();
                 break;
-            case 'attention-off':
+            case 'hide':
                 this.hideSelectedItem();
                 break;
-            case 'change-color':
+            case 'select-color':
                 this.changeItemColor();
                 break;
-            case 'unlink':
-                this.unlinkFromShadow();
+            case 'link-item':
+                // TODO: Implement connect item action
                 break;
             case 'edit':
                 this.editSelectedItem();
@@ -442,10 +445,6 @@ export class CanvasEditor {
         // TODO: Show color picker for light items
     }
 
-    unlinkFromShadow() {
-        // TODO: Unlink material from shadow
-    }
-
     editSelectedItem() {}
 
     toggleLight() {}
@@ -496,19 +495,28 @@ export class CanvasEditor {
 
     showCanvasContextMenu(x, y) {
         const menu = document.getElementById('canvas-context-menu');
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
+        menu.style.left = Math.min(x, this.canvas.width - menu.offsetWidth) + 'px';
+        menu.style.top = Math.min(y, this.canvas.height - menu.offsetHeight) + 'px';
         menu.classList.remove('hidden');
         this.state.ui.contextMenuVisible = true;
     }
 
     showItemContextMenu(x, y, id) {
+        const item = this.world.get(id);
         const menu = document.getElementById('item-context-menu');
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
+        // hide options
+        if (item.type === 'material') {
+            document.getElementById('color-option').classList.add('hidden');
+            document.getElementById('link-option').classList.add('hidden');
+        } else {
+            document.getElementById('color-option').classList.remove('hidden');
+            document.getElementById('link-option').classList.remove('hidden');
+        }
+
+        menu.style.left = Math.min(x, this.canvas.width - menu.offsetWidth) + 'px';
+        menu.style.top = Math.min(y, this.canvas.height - menu.offsetHeight) + 'px';
         menu.classList.remove('hidden');
         this.state.ui.contextMenuVisible = true;
-        this.state.interaction.selectedId = id;
     }
 
     showEditorPanel(item) {
