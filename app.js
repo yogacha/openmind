@@ -86,8 +86,15 @@ export class App extends CanvasEditor {
     handleCanvasMouseUp(event) {
         // Handle endpoint dragging release
         if (this.state.interaction.dragEndpointIndex) {
+            // check if released over another node
+            const coord = this._canvas2coord(this._mouse(event));
+            const id = this.workspace.getNodeAtPosition(coord);
+
+            if (id) {
+                const [startId, midId] = this.state.interaction.dragEndpointIndex.split('-');
+                this.addAttachment(startId, midId, id);
+            }
             this.state.interaction.dragEndpointIndex = null;
-            // TODO: (future)
         }
 
         // Clear drag states
@@ -185,6 +192,13 @@ export class App extends CanvasEditor {
         
         // Show side panel
         this.showEditorPanel(selectedItem);
+    }
+    addAttachment(startId, midId, id) {
+        const old = this.world.getAttachment(startId, midId);
+        // (future) remove old attachment
+        this.world.addAttachment(startId, midId, id); // add new attachment
+        this.workspace.add(this.world.get(id), this.world); // ensure the target node is in the workspace
+        console.log(`Changing attachment ${startId}->${midId}->${id} (before: ${old})`);
     }
     toggleLight() {
         // TODO: Toggle light on/off status

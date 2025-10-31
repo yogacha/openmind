@@ -136,6 +136,7 @@ class World {
     removeAttachment(lightId, materialId, attachedId) { // unlink material from shadow (projection), 
         this.projections.removeTriplet(lightId, materialId, attachedId);
     }
+    isLight(id) { return this.get(id).type === 'light'; }
     searchTitle(query) { // return list of items that match the query in title
         const results = [];
         for (const item of this.items.values()) {
@@ -190,16 +191,19 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         this._updateNodes(world);
     }
-    colour(id) {
+    colour(id) { // default colour for light/material/visibleOnly nodes
         if (this.items.has(id)) {
             return this.lights.has(id) ? '#ffff00' : '#ffffff';
         }
-        return '#888888';
+        return '#ffffff';
     }
     /** @type {(id: id, world: World) => void} */
     add(item, world) {
         const id = item.id;
-        if (this.items.has(id)) return; // already in attention
+        if (this.items.has(id)) { // already in attention
+            this._updateNodes(world);
+            return;
+        }
         world.add(item); // add to world first
         if (item.type === 'light') {
             this.lights.set(id, 'Off'); // default light status is Off
@@ -234,9 +238,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return null;
     }
-    setStyle(id, x, y, colour = null) {
+    setStyle(id, x, y, color = null) {
         if (this._nodes.has(id)) {
-            this._nodes.set(id, { x, y, color: colour || this.colour(id) });
+            this._nodes.set(id, { x, y, color: color || this.colour(id) });
         }
     }
     *nodes(world) {
@@ -311,8 +315,6 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         // set default color and random position for missing items ONLY
         for (const id of this.items) {
             if (this._nodes.has(id)) {
-                // Update color for existing nodes (important for visibleOnly -> attention transitions)
-                this._nodes.get(id).color = this.colour(id);
                 continue;
             }
             this._nodes.set(id, {
@@ -340,7 +342,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 this._nodes.set(id, {
                     x: Math.random() * 800 - 400,
                     y: Math.random() * 600 - 300,
-                    color: this.colour(id),
+                    color: world.isLight(id) ? '#ffff00' : '#ffffff'
                 });
             }
         }
