@@ -6,21 +6,21 @@ import { World, Workspace } from "./model.js";
 
 
 export class App extends CanvasEditor {
-    getIdAtPosition(event) {
-        const coord = this._canvas2coord(this._mouse(event));
-        return this.workspace.getIdAtPosition(coord.x, coord.y);
-    }
-
     handleCanvasMouseDown(event) {
 
         if (event.button !== 0) return; // Only handle left mouse button
-
         const mouse = this._mouse(event);
-
+        const coord = this._canvas2coord(mouse);
+        const clickedEndpointIndex = this.workspace.getEndpointAtPosition(coord);
         // Check if clicked on an item
-        const clickedNodeId = this.getIdAtPosition(event);
-
-        if (clickedNodeId) {
+        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y)
+        
+        // Check if clicked on an endpoint first (has higher priority)
+        if (clickedEndpointIndex) {
+            this.state.interaction.dragEndpointIndex = clickedEndpointIndex;
+            this.state.interaction.mouseCoord = coord;
+            console.log('Started dragging endpoint:', clickedEndpointIndex);
+        } else if (clickedNodeId) {
             this.state.interaction.selectedId = clickedNodeId;
             this.state.interaction.draggedId = clickedNodeId;
         } else {
@@ -41,8 +41,17 @@ export class App extends CanvasEditor {
 
     handleCanvasMouseMove(event) {
         const mouse = this._mouse(event);
+        const coord = this._canvas2coord(mouse);
 
-        if (this.state.interaction.isPanning) {
+        // Always update mouse coordinate for endpoint dragging
+        this.state.interaction.mouseCoord = coord;
+
+        if (this.state.interaction.dragEndpointIndex) {
+            // Update cursor for endpoint dragging
+            this.canvas.style.cursor = 'crosshair';
+            // Re-render to show endpoint following mouse
+            this.render();
+        } else if (this.state.interaction.isPanning) {
             // Update cursor
             this.canvas.style.cursor = 'grabbing';
 
@@ -59,7 +68,6 @@ export class App extends CanvasEditor {
             // Update cursor
             this.canvas.style.cursor = 'move';
             // Update item position
-            const coord = this._canvas2coord(mouse);
 
             // Update position in the nodes Map
             const nodeData = this.workspace.getNode(this.state.interaction.draggedId);
@@ -76,12 +84,21 @@ export class App extends CanvasEditor {
     }
 
     handleCanvasMouseUp(event) {
+        // Handle endpoint dragging release
+        if (this.state.interaction.dragEndpointIndex) {
+            this.state.interaction.dragEndpointIndex = null;
+            // TODO: (future)
+        }
+
         // Clear drag states
         this.state.interaction.isPanning = false;
         this.state.interaction.draggedId = null;
 
         // Change cursor back
         this.canvas.style.cursor = 'grab';
+        
+        // Re-render to show endpoint back in original position
+        this.render();
     }
     // 
     

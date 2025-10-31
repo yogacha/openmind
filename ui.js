@@ -17,6 +17,10 @@
 import utils from './utils.js';
 import { World, Workspace } from './model.js';
 
+
+const nodeRadius = 30;
+const endpointRadius = 7; // for hit testing
+
 export class CanvasEditor {
     constructor() {
         // Initialize state
@@ -35,7 +39,10 @@ export class CanvasEditor {
             interaction: {
                 selectedId: null,
                 draggedId: null,
+                /**@type {string|null} */
+                dragEndpointIndex: null,
                 dragStart: { x: 0, y: 0 },
+                mouseCoord: { x: 0, y: 0 },
                 copiedId: null,
                 isPanning: false,
                 lastCameraCenterX: 0,
@@ -192,12 +199,11 @@ export class CanvasEditor {
         this.setCamera(null, null, newZoom);
     }
     /** get item id from screen position */
-    getIdAtPosition(event) {}
-
     handleCanvasContextMenu(event) {
         event.preventDefault();
         // Check if right-clicked on an item
-        const clickedNodeId = this.getIdAtPosition(event);
+        const coord = this._canvas2coord(this._mouse(event));
+        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y);
 
         if (clickedNodeId) {
             // Show item context menu
@@ -568,6 +574,11 @@ export class CanvasEditor {
     
     drawCurves() {
         for (const curve of this.workspace.curves(this.world)) {
+            // If this endpoint is being dragged, override its position with mouse coordinate
+            if (this.state.interaction.dragEndpointIndex && 
+                this.state.interaction.dragEndpointIndex === curve.index) {
+                curve.end = { ...this.state.interaction.mouseCoord };
+            }
             this.drawCurve(curve);
         }
     }
@@ -605,9 +616,7 @@ export class CanvasEditor {
         this.drawEndpoint({x: curve.end.x, y: curve.end.y, color: curve.color});
     }
 
-    drawEndpoint(info) {
-        const radius = 5;
-
+    drawEndpoint(info, radius = endpointRadius) {
         this.ctx.beginPath();
         this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
         this.ctx.fillStyle = info.color;
@@ -620,9 +629,7 @@ export class CanvasEditor {
         }
     }
 
-    drawNode(info) {
-        const radius = 30;
-
+    drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
         this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
         this.ctx.fillStyle = info.color;

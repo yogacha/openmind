@@ -5,7 +5,7 @@
 import utils from './utils.js';
 
 const nodeRadius = 30; // for hit testing
-const endpointRadius = 5; // for hit testing
+const endpointRadius = 7; // for hit testing
 
 class Item {
     constructor(id, type, title = 'Untitled', body = '') {
@@ -158,8 +158,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.items = new Set();
         /** @type {Map<id, {x: number, y: number, color: string}>} */
         this._nodes = new Map(); // id => {x, y, color}, style info for items in attention
-        /** @type {Map<id, Map<id, {x: number, y: number}>>} */
-        this._endpoint = new Map(); // id => {x, y}, layout info for items in attention (future)   
+        /** @type {Map<string, {x: number, y: number}>} */
+        this._endpoints = new Map(); // id => {x, y}, layout info for items in attention (future)   
     }
     toObject() {
         return {
@@ -228,6 +228,14 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return null;
     }
+    getEndpointAtPosition(coord, delta = endpointRadius + 2) {
+        for (const [index, pos] of this._endpoints.entries()) {
+            if (utils.Vec.dist(pos, coord) <= delta) {
+                return index;
+            }
+        }
+        return null;
+    }
     setStyle(id, x, y, colour = null) {
         if (this._nodes.has(id)) {
             this._nodes.set(id, { x, y, color: colour || this.colour(id) });
@@ -262,12 +270,13 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this._updateEndpoints(world);
 
         for (const [start, mid,] of this.projections(world)) {
+            const index = `${start}-${mid}`;
             const startNode = this.getNode(start);
             const midNode = this.getNode(mid);
-            const endpoint = this._endpoint.get(start).get(mid);
+            const endpoint = this._endpoints.get(index);
 
             yield {
-                index: [start, mid],
+                index,
                 start: { x: startNode.x, y: startNode.y },
                 mid: { x: midNode.x, y: midNode.y },
                 end: { x: endpoint.x, y: endpoint.y },
@@ -329,7 +338,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
     }
     _updateEndpoints(world) {
-        this._endpoint.clear();
+        this._endpoints.clear();
         for (const [start, mid, end] of this.projections(world)) {
             const startNode = this.getNode(start);
             const midNode = this.getNode(mid);
@@ -341,10 +350,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 endNode,
                 utils.Vec.normalize(endToMid, nodeRadius + 2 * endpointRadius)
             );
-            if (!this._endpoint.has(start)) {
-                this._endpoint.set(start, new Map());
-            }
-            this._endpoint.get(start).set(mid, endpoint);
+            this._endpoints.set(`${start}-${mid}`, endpoint);
         }
     }
 }

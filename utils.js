@@ -8,6 +8,12 @@ export const Vec = {
     scale(v, scale = 1) {
         return { x: v.x * scale, y: v.y * scale };
     },
+    dist(a, b) {
+        return Vec.norm(Vec.sub(a, b));
+    },
+    norm(v) {
+        return Math.sqrt(v.x * v.x + v.y * v.y);
+    },
     normalize(v, length = 1) {
         const mag = Math.sqrt(v.x * v.x + v.y * v.y);
         if (mag === 0) return { x: 0, y: 0 };
