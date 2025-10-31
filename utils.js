@@ -1,24 +1,21 @@
-// vector operations
-export function vecAdd(a, b) {
-    return { x: a.x + b.x, y: a.y + b.y };
-}
-
-export function vecSub(a, b) {
-    return { x: a.x - b.x, y: a.y - b.y };
-}
-
-export function vecScale(v, scale = 1) {
-    return { x: v.x * scale, y: v.y * scale };
-}
-
-export function vecNormalize(v, length = 1) {
-    const mag = Math.sqrt(v.x * v.x + v.y * v.y);
-    if (mag === 0) return { x: 0, y: 0 };
-    return vecScale(v, length / mag);
-}
-
-export function vecAntipode(center, v) {
-    return vecAdd(center, vecSub(center, v));
+export const Vec = {
+    add(a, b) {
+        return { x: a.x + b.x, y: a.y + b.y };
+    },
+    sub(a, b) {
+        return { x: a.x - b.x, y: a.y - b.y };
+    },
+    scale(v, scale = 1) {
+        return { x: v.x * scale, y: v.y * scale };
+    },
+    normalize(v, length = 1) {
+        const mag = Math.sqrt(v.x * v.x + v.y * v.y);
+        if (mag === 0) return { x: 0, y: 0 };
+        return Vec.scale(v, length / mag);
+    },
+    antipode(center, v) {
+        return Vec.add(center, Vec.sub(center, v));
+    },
 }
 
 export function randId() { // generate random ID
@@ -36,11 +33,7 @@ export function downloadJSONFile(filename, content) {
 }
 
 export default {
-    vecAdd,
-    vecSub,
-    vecScale,
-    vecNormalize,
-    vecAntipode,
+    Vec,
     randId,
     downloadJSONFile,
 };

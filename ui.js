@@ -574,8 +574,8 @@ export class CanvasEditor {
     drawCurve(curve) {
         // Calculate control point for tangent curve from mid to end
         // The control point extends the line from start->mid beyond mid
-        const direction = utils.vecSub(curve.mid, curve.start);
-        const controlPoint = utils.vecAdd(curve.mid, utils.vecScale(direction, 0.7));
+        const direction = utils.Vec.sub(curve.mid, curve.start);
+        const controlPoint = utils.Vec.add(curve.mid, utils.Vec.scale(direction, 0.7));
         
         // Set up line style
         this.ctx.strokeStyle = curve.color;

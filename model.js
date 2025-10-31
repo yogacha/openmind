@@ -334,12 +334,12 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             const startNode = this.getNode(start);
             const midNode = this.getNode(mid);
 
-            const endNode = this.getNode(end) ?? utils.vecAntipode(midNode, startNode);
+            const endNode = this.getNode(end) ?? utils.Vec.antipode(midNode, startNode);
 
-            const endToMid = utils.vecSub(midNode, endNode);
-            const endpoint = utils.vecAdd(
+            const endToMid = utils.Vec.sub(midNode, endNode);
+            const endpoint = utils.Vec.add(
                 endNode,
-                utils.vecNormalize(endToMid, nodeRadius + 2 * endpointRadius)
+                utils.Vec.normalize(endToMid, nodeRadius + 2 * endpointRadius)
             );
             if (!this._endpoint.has(start)) {
                 this._endpoint.set(start, new Map());
