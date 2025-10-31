@@ -571,16 +571,11 @@ export class CanvasEditor {
             this.drawCurve(curve);
         }
     }
-    /**
-     * Draw a curve defined by start, mid and end coordinates.
-     * @param {{start: Coord, mid: Coord, end: Coord | null, color: string}} curve - Curve definition.
-     */
     drawCurve(curve) {
         // Calculate control point for tangent curve from mid to end
         // The control point extends the line from start->mid beyond mid
         const direction = utils.vecSub(curve.mid, curve.start);
         const controlPoint = utils.vecAdd(curve.mid, utils.vecScale(direction, 0.7));
-        const end = (curve.end) ?? controlPoint
         
         // Set up line style
         this.ctx.strokeStyle = curve.color;
@@ -600,14 +595,14 @@ export class CanvasEditor {
         this.ctx.moveTo(curve.mid.x, curve.mid.y);
         this.ctx.quadraticCurveTo(
             controlPoint.x, controlPoint.y,
-            end.x, end.y
+            curve.end.x, curve.end.y
         );
         this.ctx.stroke();
         
         // Reset line dash for other drawing operations
         this.ctx.setLineDash([]);
         
-        this.drawEndpoint({x: end.x, y: end.y, color: curve.color});
+        this.drawEndpoint({x: curve.end.x, y: curve.end.y, color: curve.color});
     }
 
     drawEndpoint(info) {

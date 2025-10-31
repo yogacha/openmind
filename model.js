@@ -196,40 +196,6 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return '#888888';
     }
-    _updateNodes(world) {
-        // set default color and random position for missing items ONLY
-        for (const id of this.items) {
-            if (this._nodes.has(id)) continue;
-            this._nodes.set(id, {
-                x: Math.random() * 800 - 400,
-                y: Math.random() * 600 - 300,
-                color: this.colour(id)
-            });
-        }
-        // now, _nodes contains all items in this.items
-
-        // gather visibleOnly items, a disjoint set from this.items
-        const visibleOnly = new Set();
-        for (const [, , id] of this.projections(world)) {
-            if (!this.items.has(id)) visibleOnly.add(id);
-        }
-        // remove invisible nodes
-        for (const id of this._nodes.keys()) {
-            if (!this.items.has(id) && !visibleOnly.has(id)) {
-                this._nodes.delete(id);
-            }
-        }
-        // add unsetted visibleOnly nodes
-        for (const id of visibleOnly) {
-            if (!this._nodes.has(id)) {
-                this._nodes.set(id, {
-                    x: Math.random() * 800 - 400,
-                    y: Math.random() * 600 - 300,
-                    color: this.colour(id),
-                });
-            }
-        }
-    }
     /** @type {(id: id, world: World) => void} */
     add(item, world) {
         const id = item.id;
@@ -268,6 +234,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
     }
     *nodes(world) {
+        // this._updateNodes(world); // unneeded since we update on every add/delete/hide
         for (const [id, info] of this._nodes.entries()) {
             yield {
                 id: id,
@@ -291,6 +258,23 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             }
         }
     }
+    *curves(world) {
+        this._updateEndpoints(world);
+
+        for (const [start, mid,] of this.projections(world)) {
+            const startNode = this.getNode(start);
+            const midNode = this.getNode(mid);
+            const endpoint = this._endpoint.get(start).get(mid);
+
+            yield {
+                index: [start, mid],
+                start: { x: startNode.x, y: startNode.y },
+                mid: { x: midNode.x, y: midNode.y },
+                end: { x: endpoint.x, y: endpoint.y },
+                color: startNode.color,
+            }
+        }
+    }
     getBoundingRect() {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         if (this._nodes.size === 0) {
@@ -309,18 +293,52 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             height: maxY - minY,
         }
     }
+    // private methods
+    _updateNodes(world) {
+        // set default color and random position for missing items ONLY
+        for (const id of this.items) {
+            if (this._nodes.has(id)) continue;
+            this._nodes.set(id, {
+                x: Math.random() * 800 - 400,
+                y: Math.random() * 600 - 300,
+                color: this.colour(id)
+            });
+        }
+        // now, _nodes contains all items in this.items
+
+        // gather visibleOnly items, a disjoint set from this.items
+        const visibleOnly = new Set();
+        for (const [, , id] of this.projections(world)) {
+            if (!this.items.has(id)) visibleOnly.add(id);
+        }
+        // remove invisible nodes
+        for (const id of this._nodes.keys()) {
+            if (!this.items.has(id) && !visibleOnly.has(id)) {
+                this._nodes.delete(id);
+            }
+        }
+        // add unsetted visibleOnly nodes
+        for (const id of visibleOnly) {
+            if (!this._nodes.has(id)) {
+                this._nodes.set(id, {
+                    x: Math.random() * 800 - 400,
+                    y: Math.random() * 600 - 300,
+                    color: this.colour(id),
+                });
+            }
+        }
+    }
     _updateEndpoints(world) {
         this._endpoint.clear();
         for (const [start, mid, end] of this.projections(world)) {
             const startNode = this.getNode(start);
             const midNode = this.getNode(mid);
-            if (!startNode || !midNode) { continue; } // for type hint
 
             const endNode = this.getNode(end) ?? utils.vecAntipode(midNode, startNode);
 
             const endToMid = utils.vecSub(midNode, endNode);
             const endpoint = utils.vecAdd(
-                endNode, 
+                endNode,
                 utils.vecNormalize(endToMid, nodeRadius + 2 * endpointRadius)
             );
             if (!this._endpoint.has(start)) {
@@ -329,25 +347,6 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             this._endpoint.get(start).set(mid, endpoint);
         }
     }
-    *curves(world) {
-        this._updateEndpoints(world);
-
-        for (const [start, mid, ] of this.projections(world)) {
-            const startNode = this.getNode(start);
-            const midNode = this.getNode(mid);
-            const endpoint = this._endpoint.get(start).get(mid);
-
-            yield {
-                start: { x: startNode.x, y: startNode.y },
-                mid: { x: midNode.x, y: midNode.y },
-                end: endpoint,
-                color: startNode.color,
-            }
-        }
-    }
-
-
-
 }
 
 
