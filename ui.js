@@ -1,4 +1,10 @@
 /**
+ * @typedef {Object} Coord
+ * @property {number} x - The x-coordinate.
+ * @property {number} y - The y-coordinate.
+ */
+
+/**
  * Interactive Canvas Editor - Event Management Structure
  * 
  * This file demonstrates common practices for handling many event listeners:
@@ -204,7 +210,6 @@ export class CanvasEditor {
 
     handleCanvasDoubleClick(event) {
         // TODO: Handle double-click actions
-        // - Edit item title (if item clicked)
         // - Add to attention (if visible-only item)
     }
 
@@ -551,7 +556,8 @@ export class CanvasEditor {
         this.ctx.scale(this.state.camera.zoom, this.state.camera.zoom);
         this.ctx.translate(-this.state.camera.centerX, -this.state.camera.centerY);
 
-        // Draw items
+        // Draw
+        this.drawCurves();
         this.drawNodes();
 
         // Restore context
@@ -559,9 +565,60 @@ export class CanvasEditor {
 
     }
 
+    
+    drawCurves() {
+        for (const curve of this.workspace.curves(this.world)) {
+            this.drawCurve(curve);
+        }
+    }
     /**
-     * Draws all items (lights and materials) on the canvas
+     * Draw a curve defined by start, mid and end coordinates.
+     * @param {{start: Coord, mid: Coord, end: Coord | null, color: string}} curve - Curve definition.
      */
+    drawCurve(curve) {
+        // Calculate control point for tangent curve from mid to end
+        // The control point extends the line from start->mid beyond mid
+        const direction = utils.vecSub(curve.mid, curve.start);
+        const controlPoint = utils.vecAdd(curve.mid, utils.vecScale(direction, 0.7));
+        const end = (curve.end) ?? controlPoint
+        
+        // Set up line style
+        this.ctx.strokeStyle = curve.color;
+        this.ctx.lineWidth = 3 / this.state.camera.zoom;
+        
+        // Draw solid straight line from start to mid
+        this.ctx.setLineDash([]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(curve.start.x, curve.start.y);
+        this.ctx.lineTo(curve.mid.x, curve.mid.y);
+        this.ctx.stroke();
+        
+        
+        // Draw dotted quadratic curve from mid to end with tangent control
+        this.ctx.setLineDash([8 / this.state.camera.zoom, 6 / this.state.camera.zoom]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(curve.mid.x, curve.mid.y);
+        this.ctx.quadraticCurveTo(
+            controlPoint.x, controlPoint.y,
+            end.x, end.y
+        );
+        this.ctx.stroke();
+        
+        // Reset line dash for other drawing operations
+        this.ctx.setLineDash([]);
+        
+        this.drawEndpoint({x: end.x, y: end.y, color: curve.color});
+    }
+
+    drawEndpoint(info) {
+        const radius = 5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
+        this.ctx.fillStyle = info.color;
+        this.ctx.fill();
+    }
+
     drawNodes() {
         for (const info of this.workspace.nodes(this.world)) {
             this.drawNode(info);

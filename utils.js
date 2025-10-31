@@ -7,7 +7,17 @@ function vecSub(a, b) {
     return { x: a.x - b.x, y: a.y - b.y };
 }
 
-function antipode(center, v) {
+function vecScale(v, scale = 1) {
+    return { x: v.x * scale, y: v.y * scale };
+}
+
+function vecNormalize(v, length = 1) {
+    const mag = Math.sqrt(v.x * v.x + v.y * v.y);
+    if (mag === 0) return { x: 0, y: 0 };
+    return vecScale(v, length / mag);
+}
+
+function vecAntipode(center, v) {
     return vecAdd(center, vecSub(center, v));
 }
 
@@ -28,7 +38,9 @@ function downloadJSONFile(filename, content) {
 export {
     vecAdd,
     vecSub,
-    antipode,
+    vecScale,
+    vecNormalize,
+    vecAntipode,
     randId,
     downloadJSONFile,
 };
@@ -36,7 +48,9 @@ export {
 export default {
     vecAdd,
     vecSub,
-    antipode,
+    vecScale,
+    vecNormalize,
+    vecAntipode,
     randId,
     downloadJSONFile,
 };

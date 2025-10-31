@@ -2,8 +2,10 @@
  * @typedef {string} id
  */
 
-import { randId } from './utils.js';
+import utils from './utils.js';
 
+const nodeRadius = 30; // for hit testing
+const endpointRadius = 5; // for hit testing
 
 class Item {
     constructor(id, type, title = 'Untitled', body = '') {
@@ -101,8 +103,8 @@ class World {
         return world;
     }
     newItem(type) {
-        let id = randId();
-        while (this.has(id)) { id = randId(); }
+        let id = utils.randId();
+        while (this.has(id)) { id = utils.randId(); }
         return new Item(id, type);
     }
     has(id) { return this.items.has(id); }
@@ -155,7 +157,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         /** @type {Set<id>} ids of items (lights & materials) in attention */
         this.items = new Set();
         /** @type {Map<id, {x: number, y: number, color: string}>} */
-        this._nodes = new Map(); // id => {x, y, color}, layout info for items in attention (future)
+        this._nodes = new Map(); // id => {x, y, color}, style info for items in attention
+        /** @type {Map<id, Map<id, {x: number, y: number}>>} */
+        this._endpoint = new Map(); // id => {x, y}, layout info for items in attention (future)   
     }
     toObject() {
         return {
@@ -248,11 +252,11 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this._updateNodes(world);
     }
     getNode(id) { return this._nodes.get(id); }
-    getIdAtPosition(x, y, radius = 30) {
+    getIdAtPosition(x, y) {
         for (const [id, info] of this._nodes.entries()) {
             const dx = info.x - x;
             const dy = info.y - y;
-            if (dx * dx + dy * dy <= radius * radius) {
+            if (dx * dx + dy * dy <= nodeRadius * nodeRadius) {
                 return id;
             }
         }
@@ -305,9 +309,41 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             height: maxY - minY,
         }
     }
+    _updateEndpoints(world) {
+        this._endpoint.clear();
+        for (const [start, mid, end] of this.projections(world)) {
+            const startNode = this.getNode(start);
+            const midNode = this.getNode(mid);
+            if (!startNode || !midNode) { continue; } // for type hint
 
+            const endNode = this.getNode(end) ?? utils.vecAntipode(midNode, startNode);
+
+            const endToMid = utils.vecSub(midNode, endNode);
+            const endpoint = utils.vecAdd(
+                endNode, 
+                utils.vecNormalize(endToMid, nodeRadius + 2 * endpointRadius)
+            );
+            if (!this._endpoint.has(start)) {
+                this._endpoint.set(start, new Map());
+            }
+            this._endpoint.get(start).set(mid, endpoint);
+        }
+    }
     *curves(world) {
-        // TODO: yield curves
+        this._updateEndpoints(world);
+
+        for (const [start, mid, ] of this.projections(world)) {
+            const startNode = this.getNode(start);
+            const midNode = this.getNode(mid);
+            const endpoint = this._endpoint.get(start).get(mid);
+
+            yield {
+                start: { x: startNode.x, y: startNode.y },
+                mid: { x: midNode.x, y: midNode.y },
+                end: endpoint,
+                color: startNode.color,
+            }
+        }
     }
 
 
