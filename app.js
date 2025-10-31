@@ -13,7 +13,7 @@ export class App extends CanvasEditor {
         const coord = this._canvas2coord(mouse);
         const clickedEndpointIndex = this.workspace.getEndpointAtPosition(coord);
         // Check if clicked on an item
-        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y)
+        const clickedNodeId = this.workspace.getNodeAtPosition(coord)
         
         // Check if clicked on an endpoint first (has higher priority)
         if (clickedEndpointIndex) {
@@ -70,7 +70,7 @@ export class App extends CanvasEditor {
             // Update item position
 
             // Update position in the nodes Map
-            const nodeData = this.workspace.getNode(this.state.interaction.draggedId);
+            const nodeData = this.workspace.hasNode(this.state.interaction.draggedId);
 
             if (!nodeData) {
                 console.warn('nodeData not found for id:', this.state.interaction.draggedId);

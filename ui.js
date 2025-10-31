@@ -203,7 +203,7 @@ export class CanvasEditor {
         event.preventDefault();
         // Check if right-clicked on an item
         const coord = this._canvas2coord(this._mouse(event));
-        const clickedNodeId = this.workspace.getIdAtPosition(coord.x, coord.y);
+        const clickedNodeId = this.workspace.getNodeAtPosition(coord);
 
         if (clickedNodeId) {
             // Show item context menu

@@ -217,12 +217,10 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.items.delete(id);
         this._updateNodes(world);
     }
-    getNode(id) { return this._nodes.get(id); }
-    getIdAtPosition(x, y) {
-        for (const [id, info] of this._nodes.entries()) {
-            const dx = info.x - x;
-            const dy = info.y - y;
-            if (dx * dx + dy * dy <= nodeRadius * nodeRadius) {
+    hasNode(id) { return this._nodes.has(id); }
+    getNodeAtPosition(coord, delta = nodeRadius) {
+        for (const [id, pos] of this._nodes.entries()) {
+            if (utils.Vec.dist(pos, coord) <= delta) {
                 return id;
             }
         }
@@ -271,9 +269,15 @@ class Workspace { // describe status of workspace data, actions in workspace sho
 
         for (const [start, mid,] of this.projections(world)) {
             const index = `${start}-${mid}`;
-            const startNode = this.getNode(start);
-            const midNode = this.getNode(mid);
+            const startNode = this._nodes.get(start);
+            const midNode = this._nodes.get(mid);
             const endpoint = this._endpoints.get(index);
+
+            // Check if endpoint exists to prevent undefined errors
+            if (!endpoint) {
+                console.warn(`Endpoint not found for curve ${index}`);
+                continue;
+            }
 
             yield {
                 index,
@@ -306,7 +310,11 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     _updateNodes(world) {
         // set default color and random position for missing items ONLY
         for (const id of this.items) {
-            if (this._nodes.has(id)) continue;
+            if (this._nodes.has(id)) {
+                // Update color for existing nodes (important for visibleOnly -> attention transitions)
+                this._nodes.get(id).color = this.colour(id);
+                continue;
+            }
             this._nodes.set(id, {
                 x: Math.random() * 800 - 400,
                 y: Math.random() * 600 - 300,
@@ -340,10 +348,10 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     _updateEndpoints(world) {
         this._endpoints.clear();
         for (const [start, mid, end] of this.projections(world)) {
-            const startNode = this.getNode(start);
-            const midNode = this.getNode(mid);
+            const startNode = this._nodes.get(start);
+            const midNode = this._nodes.get(mid);
 
-            const endNode = this.getNode(end) ?? utils.Vec.antipode(midNode, startNode);
+            const endNode = this._nodes.get(end) ?? utils.Vec.antipode(midNode, startNode);
 
             const endToMid = utils.Vec.sub(midNode, endNode);
             const endpoint = utils.Vec.add(
