@@ -165,7 +165,7 @@ export class CanvasEditor {
         this.state.camera.centerX = centerX ?? this.state.camera.centerX;
         this.state.camera.centerY = centerY ?? this.state.camera.centerY;
         this.state.camera.zoom = zoom ?? this.state.camera.zoom;
-        console.log('setCamera', centerX, centerY, zoom);
+        // console.log('setCamera', centerX, centerY, zoom);
         this.render();
     }
     resetCamera(margin = 100) {

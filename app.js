@@ -98,7 +98,10 @@ export class App extends CanvasEditor {
         }
 
         // Clear drag states
-        this.state.interaction.isPanning = false;
+        if (this.state.interaction.isPanning) {
+            console.log(`setCamera(${this.state.camera.centerX}, ${this.state.camera.centerY})`);
+            this.state.interaction.isPanning = false;
+        }
         this.state.interaction.draggedId = null;
 
         // Change cursor back
