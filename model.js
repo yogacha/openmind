@@ -246,10 +246,15 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     *nodes(world) {
         // this._updateNodes(world); // unneeded since we update on every add/delete/hide
         for (const [id, info] of this._nodes.entries()) {
+            const item = world.get(id);
+            if (!item) {
+                console.warn(`Node ${id} exists in _nodes but not in world - skipping`);
+                continue;
+            }
             yield {
                 id: id,
-                type: world.get(id).type,
-                title: world.get(id).title,
+                type: item.type,
+                title: item.title,
                 x: info.x,
                 y: info.y,
                 color: info.color.slice(0, 7) + (this.items.has(id) ? 'ff' : '88'),
@@ -287,7 +292,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 index,
                 start: { x: startNode.x, y: startNode.y },
                 mid: { x: midNode.x, y: midNode.y },
-                end: { x: endpoint.x, y: endpoint.y },
+                end: { x: endpoint.x, y: endpoint.y, isNull: endpoint.isNull },
                 color: startNode.color,
             }
         }
@@ -338,11 +343,12 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         // add unsetted visibleOnly nodes
         for (const id of visibleOnly) {
-            if (!this._nodes.has(id)) {
+            // Only add visible-only nodes that actually exist in the world
+            if (!this._nodes.has(id) && id !== null && world.has(id)) {
                 this._nodes.set(id, {
                     x: Math.random() * 800 - 400,
                     y: Math.random() * 600 - 300,
-                    color: world.isLight(id) ? '#ffff00' : '#ffffff'
+                    color: this.colour(id)
                 });
             }
         }
@@ -352,14 +358,29 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         for (const [start, mid, end] of this.projections(world)) {
             const startNode = this._nodes.get(start);
             const midNode = this._nodes.get(mid);
+            
+            // Ensure nodes exist
+            if (!startNode || !midNode) {
+                console.warn(`Missing nodes for projection ${start}-${mid}: startNode=${!!startNode}, midNode=${!!midNode}`);
+                continue;
+            }
 
-            const endNode = this._nodes.get(end) ?? utils.Vec.antipode(midNode, startNode);
-
-            const endToMid = utils.Vec.sub(midNode, endNode);
-            const endpoint = utils.Vec.add(
-                endNode,
-                utils.Vec.normalize(endToMid, nodeRadius + 2 * endpointRadius)
-            );
+            let endpoint;
+            let direction;
+            if (end && this._nodes.has(end)) {
+                const endNode = this._nodes.get(end);
+                direction = utils.Vec.sub(midNode, endNode);
+                endpoint = utils.Vec.add(
+                    endNode, utils.Vec.normalize(direction, nodeRadius + 2 * endpointRadius)
+                );
+            } else {
+                // Calculate antipode when no attachment or attachment node not visible
+                direction = utils.Vec.sub(midNode, startNode);
+                endpoint = utils.Vec.add(
+                    midNode, utils.Vec.normalize(direction, 2 * nodeRadius)
+                );
+            }
+            endpoint.isNull = (end === null);
             this._endpoints.set(`${start}-${mid}`, endpoint);
         }
     }

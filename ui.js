@@ -604,10 +604,14 @@ export class CanvasEditor {
         this.ctx.setLineDash([8 / this.state.camera.zoom, 6 / this.state.camera.zoom]);
         this.ctx.beginPath();
         this.ctx.moveTo(curve.mid.x, curve.mid.y);
-        this.ctx.quadraticCurveTo(
-            controlPoint.x, controlPoint.y,
-            curve.end.x, curve.end.y
-        );
+        if (!curve.end.isNull) {
+            this.ctx.quadraticCurveTo(
+                controlPoint.x, controlPoint.y,
+                curve.end.x, curve.end.y
+            );
+        } else {
+            this.ctx.lineTo(curve.end.x, curve.end.y);
+        }
         this.ctx.stroke();
         
         // Reset line dash for other drawing operations
