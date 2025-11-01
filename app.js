@@ -70,12 +70,11 @@ export class App extends CanvasEditor {
                 );
                 this.render();
                 break;
-            case 'drag': // dragging a node/item
+            case 'select': // dragging a node/item
                 // Update cursor
                 this.canvas.style.cursor = 'move';
 
-                const id = this.state.interaction.selectedId;
-                this.workspace.setStyle(id, coord.x, coord.y);
+                this.workspace.setStyle(this.state.interaction.selectedId, coord.x, coord.y);
                 this.render();
                 break;
         }
@@ -103,7 +102,7 @@ export class App extends CanvasEditor {
             case 'pan':
                 console.log(`setCamera(${this.state.camera.centerX}, ${this.state.camera.centerY})`);
                 break;
-            case 'drag':
+            case 'select':
                 console.log(`moveItem(${this.state.interaction.selectedId}, ${coord.x}, ${coord.y})`);
                 // this.state.interaction.selectedId = null;
                 break;
@@ -121,17 +120,34 @@ export class App extends CanvasEditor {
         this.state.interaction.mouse = this._mouse(event);
         const coord = this._canvas2coord(this.state.interaction.mouse);
         this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord);
+        this.state.interaction.selectedEndpoint = this.workspace.getEndpointAtPosition(coord);
+        this.state.interaction.mouseDown = true; // as if mouse is down, reset after
 
-        if (this.state.interaction.selectedId) {
-            if (this.workspace.items.has(this.state.interaction.selectedId)) {
-                // Item is already in workspace - open inline title editor
-                this.showInlineTitleEditor();
-            } else {
-                const item = this.world.get(this.state.interaction.selectedId);
-                this.workspace.add(item, this.world);
-                console.log(`setAttention(${this.state.interaction.selectedId})`);
-            }
+        switch (this.currentMode()) {
+            case 'attach':
+                const [startId, midId] = this.state.interaction.selectedEndpoint.split('-');
+                if (!this.world.getAttachment(startId, midId)) {
+                    this.addItem('material');
+                    const itemId = this.workspace.getNodeAtPosition(coord);
+                    this.addAttachment(startId, midId, itemId);
+                    console.log(`extend ${startId}->${midId} as ${itemId}`);
+                    this.state.interaction.selectedEndpoint = null;
+                }
+                break;
+            case 'select':
+                if (this.workspace.items.has(this.state.interaction.selectedId)) {
+                    this.showInlineTitleEditor();
+                } else {
+                    const item = this.world.get(this.state.interaction.selectedId);
+                    this.workspace.add(item, this.world);
+                    console.log(`setAttention(${this.state.interaction.selectedId})`);
+                }
+                break;
+            case 'pan':
+                // this.addItem('material');
+                break;
         }
+        this.state.interaction.mouseDown = false;
         this.render();
     }
 

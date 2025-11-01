@@ -391,7 +391,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 // Calculate antipode when no attachment or attachment node not visible
                 direction = Vec.sub(midNode, startNode);
                 endpoint = Vec.add(
-                    midNode, Vec.normalize(direction, 2 * nodeRadius)
+                    midNode, Vec.normalize(direction, 4 * nodeRadius)
                 );
             }
             endpoint.isNull = (end === null);

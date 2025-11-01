@@ -190,7 +190,7 @@ export class CanvasEditor {
                     `selectedEndpoint should be compositive, got ${this.state.interaction.selectedEndpoint}`);
                 return 'attach'; // attaching existing endpoint to a new target
             } else if (this.state.interaction.selectedId) {
-                return 'drag'; // dragging a node/item
+                return 'select'; // dragging a node/item
             } else {
                 return 'pan'; // panning/moving the camera view
             }
