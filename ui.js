@@ -331,7 +331,7 @@ export class CanvasEditor {
                 this.changeItemColor();
                 break;
             case 'link-item':
-                this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
+                this.startLinkingItem();
                 break;
             case 'edit':
                 this.editSelectedItem();
@@ -465,6 +465,11 @@ export class CanvasEditor {
 
     changeItemColor() {
         // TODO: Show color picker for light items
+    }
+
+    startLinkingItem() {
+        this.workspace.setLight(this.state.interaction.selectedId, 'On', this.world);
+        this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
     }
 
     editSelectedItem() { }

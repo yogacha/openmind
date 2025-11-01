@@ -209,7 +209,15 @@ export class App extends CanvasEditor {
         console.log(`Changing attachment ${startId}->${midId}->${id} (before: ${old})`);
     }
     toggleLight() {
-        // TODO: Toggle light on/off status
+        const currentStatus = this.workspace.lights.get(this.state.interaction.selectedId);
+        if (!currentStatus) {
+            console.warn('Light not found for item:', this.state.interaction.selectedId);
+            return;
+        }
+        const newStatus = (currentStatus === 'On') ? 'Off' : 'On';
+
+        this.workspace.setLight(this.state.interaction.selectedId, newStatus, this.world);
+        this.render();
     }
     saveItemChanges() {
         if (!this.state.ui.editingItemId) return;
