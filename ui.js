@@ -233,10 +233,7 @@ export class CanvasEditor {
         this.render();
     }
 
-    handleCanvasDoubleClick(event) {
-        // TODO: Handle double-click actions
-        // - Add to attention (if visible-only item)
-    }
+    handleCanvasDoubleClick(event) { }
 
     handleCanvasTouchStart(event) {
         // TODO: Handle touch start (mobile support)

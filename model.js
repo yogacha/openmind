@@ -197,7 +197,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return '#ffffff';
     }
-    /** @type {(id: id, world: World) => void} */
+    /** @type {(item: Item, world: World) => void} */
     add(item, world) {
         const id = item.id;
         if (this.items.has(id)) { // already in attention

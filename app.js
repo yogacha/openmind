@@ -13,14 +13,14 @@ export class App extends CanvasEditor {
         // update mouse position & selected id
         this.state.interaction.mouse = this._mouse(event);
         const coord = this._canvas2coord(this.state.interaction.mouse);
-        this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord)
+        this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord);
         console.log(`select(${this.state.interaction.selectedId})`);
 
         switch (this.currentMode()) {
             case 'link': // selectedEndpoint is setted
                 if (this.state.interaction.selectedId) {
                     this.world.addProjection(this.state.interaction.selectedEndpoint,
-                        this.state.interaction.selectedId)
+                        this.state.interaction.selectedId);
                     console.log(`addProjection(${this.state.interaction.selectedEndpoint}, ${this.state.interaction.selectedId})`);
                 }
                 this.state.interaction.selectedEndpoint = null;
@@ -75,7 +75,7 @@ export class App extends CanvasEditor {
                 this.canvas.style.cursor = 'move';
 
                 const id = this.state.interaction.selectedId;
-                this.workspace.setStyle(id, coord.x, coord.y)
+                this.workspace.setStyle(id, coord.x, coord.y);
                 this.render();
                 break;
         }
@@ -85,7 +85,7 @@ export class App extends CanvasEditor {
         // update mouse position & selected id
         this.state.interaction.mouse = this._mouse(event);
         const coord = this._canvas2coord(this.state.interaction.mouse);
-        this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord)
+        this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord);
         console.log(`select(${this.state.interaction.selectedId})`);
 
         switch (this.currentMode()) {
@@ -116,7 +116,23 @@ export class App extends CanvasEditor {
         // Re-render to show endpoint back in original position
         this.render();
     }
-    // 
+
+    handleCanvasDoubleClick(event) {
+        this.state.interaction.mouse = this._mouse(event);
+        const coord = this._canvas2coord(this.state.interaction.mouse);
+        this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord);
+
+        if (this.state.interaction.selectedId) {
+            if (this.workspace.items.has(this.state.interaction.selectedId)) {
+                console.log('TODO: edit title');
+            } else {
+                const item = this.world.get(this.state.interaction.selectedId);
+                this.workspace.add(item, this.world);
+                console.log(`setAttention(${this.state.interaction.selectedId})`);
+            }
+        }
+        this.render();
+    }
 
     handleGlobalClick(event) {
         const target = event.target;
