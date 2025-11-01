@@ -43,7 +43,6 @@ export class CanvasEditor {
                 dragStart: { x: 0, y: 0 },
                 lastCamera: { centerX: 0, centerY: 0, zoom: 1 },
                 mouse: { x: 0, y: 0 },
-                copiedId: null,
                 mouseDown: false,
             },
             ui: {
@@ -309,12 +308,6 @@ export class CanvasEditor {
             case 'add-material':
                 this.addItem('material');
                 break;
-            case 'paste':
-                this.pasteItem();
-                break;
-            case 'copy':
-                this.copySelectedItem();
-                break;
             case 'delete':
                 this.deleteSelectedItem();
                 break;
@@ -443,14 +436,6 @@ export class CanvasEditor {
 
     addItem(type) { }
 
-    pasteItem() {
-        // TODO: Paste copied item
-    }
-
-    copySelectedItem() {
-        // TODO: Copy selected item to clipboard state
-    }
-
     deleteSelectedItem() { }
 
     hideSelectedItem() { }
@@ -458,7 +443,10 @@ export class CanvasEditor {
     saveItemChanges() { }
 
     changeItemColor() {
-        // TODO: Show color picker for light items
+        // random color for demo
+        const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        this.workspace.setStyle(this.state.interaction.selectedId, null, null, color);
+        this.render();
     }
 
     startLinkingItem() {

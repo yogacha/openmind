@@ -243,9 +243,14 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.lights.set(id, status);
         this._updateNodes(world);
     }
-    setStyle(id, x, y, color = null) {
+    setStyle(id, x = null, y = null, color = null) {
+        const a = x || 1;
         if (this._nodes.has(id)) {
-            this._nodes.set(id, { x, y, color: color || this.colour(id) });
+            this._nodes.set(id, {
+                x: x ?? this._nodes.get(id).x,
+                y: y ?? this._nodes.get(id).y,
+                color: color ?? this._nodes.get(id).color
+            });
         }
     }
     *nodes(world) {
