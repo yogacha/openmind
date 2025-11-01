@@ -2,7 +2,7 @@
  * @typedef {string} id
  */
 
-import utils from './utils.js';
+import utils, { Vec } from './utils.js';
 
 const nodeRadius = 30; // for hit testing
 const endpointRadius = 7; // for hit testing
@@ -224,7 +224,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     hasNode(id) { return this._nodes.has(id); }
     getNodeAtPosition(coord, delta = nodeRadius) {
         for (const [id, pos] of this._nodes.entries()) {
-            if (utils.Vec.dist(pos, coord) <= delta) {
+            if (Vec.dist(pos, coord) <= delta) {
                 return id;
             }
         }
@@ -232,7 +232,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     }
     getEndpointAtPosition(coord, delta = endpointRadius + 2) {
         for (const [index, pos] of this._endpoints.entries()) {
-            if (utils.Vec.dist(pos, coord) <= delta) {
+            if (Vec.dist(pos, coord) <= delta) {
                 return index;
             }
         }
@@ -336,9 +336,14 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         // now, _nodes contains all items in this.items
 
         // gather visibleOnly items, a disjoint set from this.items
-        const visibleOnly = new Set();
-        for (const [, , id] of this.projections(world)) {
-            if (!this.items.has(id)) visibleOnly.add(id);
+        // const visibleOnly = new Set();
+        const visibleOnly = new Map();
+        for (const [start, mid, id] of this.projections(world)) {
+            if (!this.items.has(id) && !visibleOnly.has(id)) {
+                visibleOnly.set(id,
+                    Vec.antipode(this._nodes.get(mid), this._nodes.get(start))
+                );
+            }
         }
         // remove invisible nodes
         for (const id of this._nodes.keys()) {
@@ -347,12 +352,11 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             }
         }
         // add unsetted visibleOnly nodes
-        for (const id of visibleOnly) {
+        for (const [id, pos] of visibleOnly.entries()) {
             // Only add visible-only nodes that actually exist in the world
             if (!this._nodes.has(id) && id !== null && world.has(id)) {
                 this._nodes.set(id, {
-                    x: Math.random() * 800 - 400,
-                    y: Math.random() * 600 - 300,
+                    x: pos.x, y: pos.y,
                     color: this.colour(id)
                 });
             }
@@ -374,15 +378,15 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             let direction;
             if (end && this._nodes.has(end)) {
                 const endNode = this._nodes.get(end);
-                direction = utils.Vec.sub(midNode, endNode);
-                endpoint = utils.Vec.add(
-                    endNode, utils.Vec.normalize(direction, nodeRadius + 2 * endpointRadius)
+                direction = Vec.sub(midNode, endNode);
+                endpoint = Vec.add(
+                    endNode, Vec.normalize(direction, nodeRadius + 2 * endpointRadius)
                 );
             } else {
                 // Calculate antipode when no attachment or attachment node not visible
-                direction = utils.Vec.sub(midNode, startNode);
-                endpoint = utils.Vec.add(
-                    midNode, utils.Vec.normalize(direction, 2 * nodeRadius)
+                direction = Vec.sub(midNode, startNode);
+                endpoint = Vec.add(
+                    midNode, Vec.normalize(direction, 2 * nodeRadius)
                 );
             }
             endpoint.isNull = (end === null);
