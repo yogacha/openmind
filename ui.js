@@ -222,17 +222,13 @@ export class CanvasEditor {
 
     handleCanvasContextMenu(event) {
         event.preventDefault();
-        // Check if right-clicked on an item
-        const coord = this._canvas2coord(this._mouse(event));
-        const clickedNodeId = this.workspace.getNodeAtPosition(coord);
 
-        if (clickedNodeId) {
+        if (this.state.interaction.selectedId) {
             // Show item context menu
-            this.showItemContextMenu(event.clientX, event.clientY, clickedNodeId);
-            this.state.interaction.selectedId = clickedNodeId;
+            this.showItemContextMenu();
         } else {
             // Show canvas context menu
-            this.showCanvasContextMenu(event.clientX, event.clientY);
+            this.showCanvasContextMenu();
         }
 
         this.render();
@@ -306,17 +302,15 @@ export class CanvasEditor {
     }
 
     executeContextAction(action, event) {
-        const coord = this._canvas2coord(this._mouse(event));
-
         switch (action) {
             case 'add-light':
-                this.addItem(coord.x, coord.y, 'light');
+                this.addItem('light');
                 break;
             case 'add-material':
-                this.addItem(coord.x, coord.y, 'material');
+                this.addItem('material');
                 break;
             case 'paste':
-                this.pasteItem(coord.x, coord.y);
+                this.pasteItem();
                 break;
             case 'copy':
                 this.copySelectedItem();
@@ -447,9 +441,9 @@ export class CanvasEditor {
     // ACTION METHODS (TO BE IMPLEMENTED)
     // ============================================================================
 
-    addItem(x, y, type) { }
+    addItem(type) { }
 
-    pasteItem(x, y) {
+    pasteItem() {
         // TODO: Paste copied item
     }
 
@@ -517,16 +511,16 @@ export class CanvasEditor {
         this.state.ui.contextMenuVisible = false;
     }
 
-    showCanvasContextMenu(x, y) {
+    showCanvasContextMenu() {
         const menu = document.getElementById('canvas-context-menu');
-        menu.style.left = Math.min(x, this.canvas.width - menu.offsetWidth) + 'px';
-        menu.style.top = Math.min(y, this.canvas.height - menu.offsetHeight) + 'px';
+        menu.style.left = Math.min(this.state.interaction.mouse.x, this.canvas.width - menu.offsetWidth) + 'px';
+        menu.style.top = Math.min(this.state.interaction.mouse.y, this.canvas.height - menu.offsetHeight) + 'px';
         menu.classList.remove('hidden');
         this.state.ui.contextMenuVisible = true;
     }
 
-    showItemContextMenu(x, y, id) {
-        const item = this.world.get(id);
+    showItemContextMenu() {
+        const item = this.world.get(this.state.interaction.selectedId);
         const menu = document.getElementById('item-context-menu');
         // hide options
         if (item.type === 'material') {
@@ -537,8 +531,8 @@ export class CanvasEditor {
             document.getElementById('link-option').classList.remove('hidden');
         }
 
-        menu.style.left = Math.min(x, this.canvas.width - menu.offsetWidth) + 'px';
-        menu.style.top = Math.min(y, this.canvas.height - menu.offsetHeight) + 'px';
+        menu.style.left = Math.min(this.state.interaction.mouse.x, this.canvas.width - menu.offsetWidth) + 'px';
+        menu.style.top = Math.min(this.state.interaction.mouse.y, this.canvas.height - menu.offsetHeight) + 'px';
         menu.classList.remove('hidden');
         this.state.ui.contextMenuVisible = true;
     }
@@ -718,20 +712,14 @@ export class CanvasEditor {
     }
     _mouse(event) { // Returns position relative to canvas center
         return {
-            x: event.clientX - this.canvas.width / 2,
-            y: event.clientY - this.canvas.height / 2
+            x: event.clientX,
+            y: event.clientY
         };
     }
-    _canvas2coord(canvasCenterPoint) { // Convert canvas-center position to coordinates
+    _canvas2coord(mouse) { // Convert canvas position to coordinates
         return {
-            x: this.state.camera.centerX + canvasCenterPoint.x / this.state.camera.zoom,
-            y: this.state.camera.centerY + canvasCenterPoint.y / this.state.camera.zoom
-        };
-    }
-    _coord2canvas(worldPoint) { // Convert coordinates to canvas-center position
-        return {
-            x: (worldPoint.x - this.state.camera.centerX) * this.state.camera.zoom,
-            y: (worldPoint.y - this.state.camera.centerY) * this.state.camera.zoom
+            x: this.state.camera.centerX + (mouse.x - this.canvas.width / 2) / this.state.camera.zoom,
+            y: this.state.camera.centerY + (mouse.y - this.canvas.height / 2) / this.state.camera.zoom
         };
     }
 }

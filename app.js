@@ -143,14 +143,15 @@ export class App extends CanvasEditor {
     // ===========================================================================
     // Action METHODS
     // ===========================================================================
-    addItem(x, y, type) {
+    addItem(type) {
         const item = this.world.newItem(type);
+        const coord = this._canvas2coord(this.state.interaction.mouse);
         // add to attention
         this.workspace.add(item, this.world);
-        this.workspace.setStyle(item.id, x, y);
+        this.workspace.setStyle(item.id, coord.x, coord.y);
 
+        console.log(`addItem(${item.type}, ${coord.x}, ${coord.y})`);
         this.render();
-        console.log('Added ' + type + ':', item.id);
     }
     deleteSelectedItem() {
         if (!this.state.interaction.selectedId) {
