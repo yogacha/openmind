@@ -38,15 +38,13 @@ export class CanvasEditor {
             },
             interaction: {
                 selectedId: null,
-                draggedId: null,
-                /**@type {string|null} */
-                dragEndpointIndex: null,
+                /** not necessary drag */
+                selectedEndpoint: null,
                 dragStart: { x: 0, y: 0 },
-                mouseCoord: { x: 0, y: 0 },
+                lastCamera: { centerX: 0, centerY: 0, zoom: 1 },
+                mouse: { x: 0, y: 0 },
                 copiedId: null,
-                isPanning: false,
-                lastCameraCenterX: 0,
-                lastCameraCenterY: 0,
+                mouseDown: false,
             },
             ui: {
                 searchResults: [],
@@ -166,7 +164,7 @@ export class CanvasEditor {
         this.state.camera.centerY = centerY ?? this.state.camera.centerY;
         this.state.camera.zoom = zoom ?? this.state.camera.zoom;
         // console.log('setCamera', centerX, centerY, zoom);
-        this.render();
+        // this.render();
     }
     resetCamera(margin = 100) {
         const rect = this.workspace.getBoundingRect();
@@ -176,6 +174,28 @@ export class CanvasEditor {
         );
         ratio = Math.min(ratio, 1);
         this.setCamera(rect.centerX, rect.centerY, ratio);
+    }
+    // =============================
+    currentMode() {
+        if (this.state.interaction.mouseDown) { // pan/drag/attach
+            if (this.state.interaction.selectedEndpoint) {
+                console.assert(this.state.interaction.selectedEndpoint.includes('-'),
+                    `selectedEndpoint should be compositive, got ${this.state.interaction.selectedEndpoint}`);
+                return 'attach'; // attaching existing endpoint to a new target
+            } else if (this.state.interaction.selectedId) {
+                return 'drag'; // dragging a node/item
+            } else {
+                return 'pan'; // panning/moving the camera view
+            }
+        } else { // 
+            if (this.state.interaction.selectedEndpoint) { // has select endpoint
+                console.assert(!this.state.interaction.selectedEndpoint.includes('-'),
+                    `selectedEndpoint should be pure, got ${this.state.interaction.selectedEndpoint}`);
+                return 'link'; // creating new link from selected light
+            } else {
+                return 'idle'; // default mode
+            }
+        }
     }
     // ============================================================================
     // EVENT HANDLERS
@@ -197,6 +217,7 @@ export class CanvasEditor {
         const newZoom = Math.max(0.1, Math.min(5, this.state.camera.zoom * zoomFactor));
 
         this.setCamera(null, null, newZoom);
+        this.render();
     }
 
     handleCanvasContextMenu(event) {
@@ -310,7 +331,7 @@ export class CanvasEditor {
                 this.changeItemColor();
                 break;
             case 'link-item':
-                // TODO: Implement connect item action
+                this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
                 break;
             case 'edit':
                 this.editSelectedItem();
@@ -383,6 +404,7 @@ export class CanvasEditor {
                 break;
             case 'r':
                 this.resetCamera();
+                this.render();
                 break;
         }
     }
@@ -456,15 +478,12 @@ export class CanvasEditor {
     }
 
     cancelCurrentOperation() {
-        // Cancel dragging
-        this.state.interaction.isPanning = false;
-        this.state.interaction.draggedId = null;
-
         // Close any open popups
         this.closeAllPopups();
         
         // Clear selection
         this.state.interaction.selectedId = null;
+        this.state.interaction.selectedEndpoint = null;
         this.render();
     }
 
@@ -581,11 +600,18 @@ export class CanvasEditor {
 
     
     drawCurves() {
+        if (this.currentMode() === 'link') { // link light to item
+            const nodeStyle = this.workspace._nodes.get(this.state.interaction.selectedId);
+            const start = { x: nodeStyle.x, y: nodeStyle.y };
+            const end = this._canvas2coord(this.state.interaction.mouse);
+            // linking mode
+            this.drawCurve({ start, mid: start, end, color: nodeStyle.color });
+        }
         for (const curve of this.workspace.curves(this.world)) {
             // If this endpoint is being dragged, override its position with mouse coordinate
-            if (this.state.interaction.dragEndpointIndex && 
-                this.state.interaction.dragEndpointIndex === curve.index) {
-                curve.end = { ...this.state.interaction.mouseCoord };
+            if (this.currentMode() === 'attach' && 
+                this.state.interaction.selectedEndpoint === curve.index) {
+                curve.end = this._canvas2coord(this.state.interaction.mouse);
             }
             this.drawCurve(curve);
         }

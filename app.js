@@ -1,5 +1,7 @@
 import { CanvasEditor } from "./ui.js";
 import { World, Workspace } from "./model.js";
+import utils, { Vec } from "./utils.js";
+
 
 
 // implement CanvasEditor.handleCanvasMouseDown
@@ -7,103 +9,106 @@ import { World, Workspace } from "./model.js";
 
 export class App extends CanvasEditor {
     handleCanvasMouseDown(event) {
-
         if (event.button !== 0) return; // Only handle left mouse button
-        const mouse = this._mouse(event);
-        const coord = this._canvas2coord(mouse);
-        const clickedEndpointIndex = this.workspace.getEndpointAtPosition(coord);
-        // Check if clicked on an item
-        const clickedNodeId = this.workspace.getNodeAtPosition(coord)
+        // update mouse position & selected id
+        this.state.interaction.mouse = this._mouse(event);
+        const coord = this._canvas2coord(this.state.interaction.mouse);
+        this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord)
+        console.log(`select(${this.state.interaction.selectedId})`);
         
-        // Check if clicked on an endpoint first (has higher priority)
-        if (clickedEndpointIndex) {
-            this.state.interaction.dragEndpointIndex = clickedEndpointIndex;
-            this.state.interaction.mouseCoord = coord;
-            console.log('Started dragging endpoint:', clickedEndpointIndex);
-        } else if (clickedNodeId) {
-            this.state.interaction.selectedId = clickedNodeId;
-            this.state.interaction.draggedId = clickedNodeId;
-        } else {
-            // Clear selection
-            this.state.interaction.selectedId = null;
-
-            // Start panning
-            this.state.interaction.isPanning = true;
+        switch (this.currentMode()) {
+            case 'link': // selectedEndpoint is setted
+                if (this.state.interaction.selectedId) {
+                    this.world.addProjection(this.state.interaction.selectedEndpoint, 
+                        this.state.interaction.selectedId)
+                    console.log(`addProjection(${this.state.interaction.selectedEndpoint}, ${this.state.interaction.selectedId})`);
+                }
+                this.state.interaction.selectedEndpoint = null;
+            case 'idle':
+                this.state.interaction.selectedEndpoint = this.workspace.getEndpointAtPosition(coord);
+        
+                if (this.state.interaction.selectedId) {
+                    console.log('Started dragging item:', this.state.interaction.selectedId);
+                } else if (this.state.interaction.selectedEndpoint) {
+                    console.log('Started dragging endpoint:', this.state.interaction.selectedEndpoint);
+                } else {
+                    console.log('Started panning the canvas');
+                }
         }
-
         // Store drag start position
-        this.state.interaction.dragStart = mouse;
-        this.state.interaction.lastCameraCenterX = this.state.camera.centerX;
-        this.state.interaction.lastCameraCenterY = this.state.camera.centerY;
+        this.state.interaction.mouseDown = true;
+        this.state.interaction.dragStart = { ...this.state.interaction.mouse };
+        this.state.interaction.lastCamera = { ...this.state.camera };
 
         this.render();
     }
 
     handleCanvasMouseMove(event) {
-        const mouse = this._mouse(event);
-        const coord = this._canvas2coord(mouse);
+        this.state.interaction.mouse = this._mouse(event);
+        const coord = this._canvas2coord(this.state.interaction.mouse);
 
-        // Always update mouse coordinate for endpoint dragging
-        this.state.interaction.mouseCoord = coord;
-
-        if (this.state.interaction.dragEndpointIndex) {
+        switch (this.currentMode()) {
+        case 'attach':
+        case 'link':
             // Update cursor for endpoint dragging
             this.canvas.style.cursor = 'crosshair';
-            // Re-render to show endpoint following mouse
             this.render();
-        } else if (this.state.interaction.isPanning) {
+            break;
+        case 'pan':
             // Update cursor
             this.canvas.style.cursor = 'grabbing';
 
             // Update camera position based on mouse movement
-            const deltaX = (mouse.x - this.state.interaction.dragStart.x) / this.state.camera.zoom;
-            const deltaY = (mouse.y - this.state.interaction.dragStart.y) / this.state.camera.zoom;
+            const delta = Vec.scale(
+                Vec.sub(this.state.interaction.mouse, this.state.interaction.dragStart), 
+                1 / this.state.camera.zoom);
 
             this.setCamera(
-                this.state.interaction.lastCameraCenterX - deltaX,
-                this.state.interaction.lastCameraCenterY - deltaY,
+                this.state.interaction.lastCamera.centerX - delta.x,
+                this.state.interaction.lastCamera.centerY - delta.y,
                 null
             );
-        } else if (this.state.interaction.draggedId) {
+            this.render();
+            break;
+        case 'drag': // dragging a node/item
             // Update cursor
             this.canvas.style.cursor = 'move';
-            // Update item position
 
-            // Update position in the nodes Map
-            const nodeData = this.workspace.hasNode(this.state.interaction.draggedId);
-
-            if (!nodeData) {
-                console.warn('nodeData not found for id:', this.state.interaction.draggedId);
-                console.log('draggedNodeId:', this.state.interaction.draggedId);
-                return;
-            }
-            this.workspace.setStyle(this.state.interaction.draggedId, coord.x, coord.y)
-
+            const id = this.state.interaction.selectedId;
+            this.workspace.setStyle(id, coord.x, coord.y)
             this.render();
+            break;
         }
     }
 
     handleCanvasMouseUp(event) {
-        // Handle endpoint dragging release
-        if (this.state.interaction.dragEndpointIndex) {
-            // check if released over another node
-            const coord = this._canvas2coord(this._mouse(event));
-            const id = this.workspace.getNodeAtPosition(coord);
+        // update mouse position & selected id
+        this.state.interaction.mouse = this._mouse(event);
+        const coord = this._canvas2coord(this.state.interaction.mouse);
+        this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord)
+        console.log(`select(${this.state.interaction.selectedId})`);
 
-            if (id) {
-                const [startId, midId] = this.state.interaction.dragEndpointIndex.split('-');
-                this.addAttachment(startId, midId, id);
-            }
-            this.state.interaction.dragEndpointIndex = null;
+        switch (this.currentMode()) {
+            case 'attach':
+                const [startId, midId] = this.state.interaction.selectedEndpoint.split('-');
+                if (this.state.interaction.selectedId) {
+                    this.addAttachment(startId, midId, this.state.interaction.selectedId);
+                    console.log(`addAttachment(${startId}, ${midId}, ${this.state.interaction.selectedId})`);
+                } else {
+                    console.log('give up adding attachment - no target selected');
+                }
+                this.state.interaction.selectedEndpoint = null;
+                break;
+            case 'pan':
+                console.log(`setCamera(${this.state.camera.centerX}, ${this.state.camera.centerY})`);
+                break;
+            case 'drag':
+                console.log(`moveItem(${this.state.interaction.selectedId}, ${coord.x}, ${coord.y})`);
+                // this.state.interaction.selectedId = null;
+                break;
         }
 
-        // Clear drag states
-        if (this.state.interaction.isPanning) {
-            console.log(`setCamera(${this.state.camera.centerX}, ${this.state.camera.centerY})`);
-            this.state.interaction.isPanning = false;
-        }
-        this.state.interaction.draggedId = null;
-
+        this.state.interaction.mouseDown = false;
         // Change cursor back
         this.canvas.style.cursor = 'grab';
         
