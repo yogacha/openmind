@@ -179,6 +179,12 @@ export class App extends CanvasEditor {
 
         console.log('Deleted item:', itemId, 'Type:', item.type);
     }
+    deleteProjection() {
+        const [startId, midId] = this.state.interaction.selectedEndpoint.split('-');
+        this.world.removeProjection(startId, midId);
+        this.state.interaction.selectedEndpoint = null;
+        this.render();
+    }
     hideSelectedItem() {
         this.workspace.hide(this.state.interaction.selectedId, this.world);
         this.render();

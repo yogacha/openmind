@@ -368,6 +368,8 @@ export class CanvasEditor {
             case 'delete':
                 if (this.state.interaction.selectedId && !this.state.ui.editingItemId) {
                     this.deleteSelectedItem();
+                } else if (this.state.interaction.selectedEndpoint?.includes('-')) {
+                    this.deleteProjection();
                 }
                 break;
             case 'enter':
@@ -437,6 +439,8 @@ export class CanvasEditor {
     addItem(type) { }
 
     deleteSelectedItem() { }
+
+    deleteProjection() { }
 
     hideSelectedItem() { }
 
