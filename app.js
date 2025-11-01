@@ -93,9 +93,10 @@ export class App extends CanvasEditor {
                 const [startId, midId] = this.state.interaction.selectedEndpoint.split('-');
                 if (this.state.interaction.selectedId) {
                     this.addAttachment(startId, midId, this.state.interaction.selectedId);
-                    console.log(`addAttachment(${startId}, ${midId}, ${this.state.interaction.selectedId})`);
                 } else {
-                    console.log('give up adding attachment - no target selected');
+                    // remove attachment
+                    this.world.addAttachment(startId, midId, null);
+                    console.log('Cleared attachment for endpoint:', this.state.interaction.selectedEndpoint);
                 }
                 this.state.interaction.selectedEndpoint = null;
                 break;
