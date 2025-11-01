@@ -53,7 +53,9 @@ export class CanvasEditor {
                 openingStep: null,
                 editingItemId: null,
                 originalTitle: null,
-                originalBody: null
+                originalBody: null,
+                inlineTitleEditId: null,
+                inlineTitleValue: ''
             }
         };
 
@@ -140,6 +142,12 @@ export class CanvasEditor {
         // File input for import
         document.getElementById('world-input').addEventListener('change', this.handleWorldSelect.bind(this));
         document.getElementById('workspace-input').addEventListener('change', this.handleWorkspaceSelect.bind(this));
+
+        // Inline title editor
+        const inlineTitleInput = document.getElementById('inline-title-input');
+        inlineTitleInput.addEventListener('input', this.handleInlineTitleInput.bind(this));
+        inlineTitleInput.addEventListener('blur', this.handleInlineTitleBlur.bind(this));
+        inlineTitleInput.addEventListener('keydown', this.handleInlineTitleKeydown.bind(this));
     }
 
     /**
@@ -204,7 +212,10 @@ export class CanvasEditor {
      */
     handleCanvasMouseDown(event) { }
 
-    handleCanvasMouseMove(event) { }
+    handleCanvasMouseMove(event) {
+        // Update mouse position for general use
+        this.state.interaction.mouse = this._mouse(event);
+    }
 
     handleCanvasMouseUp(event) { }
 
@@ -261,11 +272,13 @@ export class CanvasEditor {
             this.handleCloseButton(target, event);
         } else if (target.id === 'search-dropdown') {
             this.handleSearchItemClick(target, event);
-        } else if (!target.closest('.modal, .context-menu, .side-panel')) {
+        } else if (!target.closest('.modal, .context-menu, .side-panel, .inline-title-editor')) {
             // Click outside modals/menus - close them
             // Save editor changes if panel is open
             if (this.state.ui.editingItemId) {
                 this.saveItemChanges();
+            } else if (this.state.ui.inlineTitleEditId) {
+                this.saveInlineTitleChanges();
             } else {
                 this.closeAllPopups();
             }
@@ -346,6 +359,34 @@ export class CanvasEditor {
     }
 
     /**
+     * INLINE TITLE EDITOR EVENT HANDLERS
+     */
+    handleInlineTitleInput(event) {
+        this.state.ui.inlineTitleValue = event.target.value;
+    }
+
+    handleInlineTitleBlur(event) {
+        // Save changes when losing focus (unless clicking on canvas or other elements)
+        setTimeout(() => {
+            if (this.state.ui.inlineTitleEditId) {
+                this.saveInlineTitleChanges();
+            }
+        }, 100);
+    }
+
+    handleInlineTitleKeydown(event) {
+        event.stopPropagation(); // Prevent global keyboard shortcuts while editing
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.saveInlineTitleChanges();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            this.cancelCurrentOperation();
+        }
+    }
+
+    /**
      * COMMON PRACTICE 5: Centralized Keyboard Shortcut Mapping
      */
     handleKeyDown(event) {
@@ -370,12 +411,16 @@ export class CanvasEditor {
                 }
                 break;
             case 'enter':
-                if (this.state.interaction.selectedId && !this.state.ui.editingItemId) {
+                if (this.state.ui.inlineTitleEditId) {
+                    this.saveInlineTitleChanges();
+                } else if (this.state.interaction.selectedId && !this.state.ui.editingItemId) {
                     this.editSelectedItem();
                 }
                 break;
             case 'escape':
-                if (this.state.ui.editingItemId) {
+                if (this.state.ui.inlineTitleEditId) {
+                    this.cancelCurrentOperation();
+                } else if (this.state.ui.editingItemId) {
                     this.saveItemChanges();
                 } else {
                     this.cancelCurrentOperation();
@@ -441,7 +486,47 @@ export class CanvasEditor {
 
     hideSelectedItem() { }
 
-    saveItemChanges() { }
+    saveItemChanges() {
+        if (!this.state.ui.editingItemId) return;
+
+        const item = this.world.get(this.state.ui.editingItemId);
+        if (!item) {
+            console.warn('Item to save not found:', this.state.ui.editingItemId);
+            return;
+        }
+
+        const titleInput = document.getElementById('item-title-input');
+        const bodyInput = document.getElementById('item-body-input');
+
+        // Update item data
+        item.title = titleInput.value.trim() || 'Untitled';
+        item.body = bodyInput.value;
+
+        // Re-render to show updated title
+        this.render();
+
+        // Hide panel
+        this.hideEditorPanel();
+
+        console.log('Saved changes for item:', item.id);
+    }
+
+    saveInlineTitleChanges() {
+        if (!this.state.ui.inlineTitleEditId) return;
+
+        const itemId = this.state.ui.inlineTitleEditId;
+        const newTitle = this.state.ui.inlineTitleValue.trim();
+
+        // Update the item's title in the world
+        const item = this.world.get(itemId);
+        if (item && newTitle !== '') {
+            item.title = newTitle;
+            console.log('Updated item title:', itemId, newTitle);
+        }
+
+        this.hideInlineTitleEditor();
+        this.render();
+    }
 
     changeItemColor() {
         // random color for demo
@@ -476,22 +561,13 @@ export class CanvasEditor {
     }
 
     closeAllPopups() {
-        // Hide context menus
-        document.getElementById('canvas-context-menu').classList.add('hidden');
-        document.getElementById('item-context-menu').classList.add('hidden');
-
-        // Hide modals
-        document.getElementById('help-modal').classList.add('hidden');
+        this.hideContextMenu();
+        this.hideHelpModal();
+        this.hideEditorPanel();
+        this.hideInlineTitleEditor();
 
         // Hide search dropdown
         document.getElementById('search-dropdown').classList.add('hidden');
-
-        // Hide editor panel
-        document.getElementById('side-panel').classList.add('hidden');
-
-        this.state.ui.contextMenuVisible = false;
-        this.state.ui.modalOpen = false;
-        this.state.ui.editingItemId = null;
     }
 
     hideContextMenu() {
@@ -549,6 +625,35 @@ export class CanvasEditor {
         console.log('Opened editor for item:', item.id);
     }
 
+    showInlineTitleEditor() {
+        const itemId = this.state.interaction.selectedId;
+        const item = this.world.get(itemId);
+        if (!item) return;
+
+        this.state.ui.inlineTitleEditId = itemId;
+        this.state.ui.inlineTitleValue = item.title || '';
+
+        // Get the input element and position it
+        const input = document.getElementById('inline-title-input');
+        // Position the input over the item
+        input.style.left = (this.state.interaction.mouse.x - 50) + 'px'; // Center the input (assuming 100px width)
+        input.style.top = (this.state.interaction.mouse.y - 10) + 'px';  // Center vertically
+        input.value = this.state.ui.inlineTitleValue;
+
+        // Show and focus the input
+        input.classList.remove('hidden');
+        setTimeout(() => {
+            input.focus();
+            input.select(); // Select all text for easy editing
+        }, 10);
+        // this.render();
+    }
+
+    hideHelpModal() {
+        document.getElementById('help-modal').classList.add('hidden');
+        this.state.ui.modalOpen = false;
+    }
+
     hideEditorPanel() {
         const panel = document.getElementById('side-panel');
         panel.classList.add('hidden');
@@ -560,6 +665,30 @@ export class CanvasEditor {
 
         console.log('Closed editor panel');
     }
+
+    hideInlineTitleEditor() {
+        document.getElementById('inline-title-input').classList.add('hidden');
+        this.state.ui.inlineTitleEditId = null;
+        this.state.ui.inlineTitleValue = '';
+    }
+
+    saveInlineTitleChanges() {
+        if (!this.state.ui.inlineTitleEditId) return;
+
+        const itemId = this.state.ui.inlineTitleEditId;
+        const newTitle = this.state.ui.inlineTitleValue.trim();
+
+        // Update the item's title in the world
+        const item = this.world.get(itemId);
+        if (item && newTitle !== '') {
+            item.title = newTitle;
+            console.log('Updated item title:', itemId, newTitle);
+        }
+
+        this.hideInlineTitleEditor();
+        this.render();
+    }
+
 
     /**
      * RENDERING

@@ -124,7 +124,8 @@ export class App extends CanvasEditor {
 
         if (this.state.interaction.selectedId) {
             if (this.workspace.items.has(this.state.interaction.selectedId)) {
-                console.log('TODO: edit title');
+                // Item is already in workspace - open inline title editor
+                this.showInlineTitleEditor();
             } else {
                 const item = this.world.get(this.state.interaction.selectedId);
                 this.workspace.add(item, this.world);
@@ -144,11 +145,13 @@ export class App extends CanvasEditor {
             this.handleCloseButton(target, event);
         } else if (target.id === 'search-dropdown') {
             this.handleSearchItemClick(target, event);
-        } else if (!target.closest('.modal, .context-menu, .side-panel')) {
+        } else if (!target.closest('.modal, .context-menu, .side-panel, .inline-title-editor')) {
             // Click outside modals/menus - close them
             // Save editor changes if panel is open
             if (this.state.ui.editingItemId) {
                 this.saveItemChanges();
+            } else if (this.state.ui.inlineTitleEditId) {
+                this.saveInlineTitleChanges();
             } else {
                 this.closeAllPopups();
             }
@@ -243,31 +246,6 @@ export class App extends CanvasEditor {
         this.workspace.setLight(this.state.interaction.selectedId, newStatus, this.world);
         this.render();
     }
-    saveItemChanges() {
-        if (!this.state.ui.editingItemId) return;
-
-        const item = this.world.get(this.state.ui.editingItemId);
-        if (!item) {
-            console.warn('Item to save not found:', this.state.ui.editingItemId);
-            return;
-        }
-
-        const titleInput = document.getElementById('item-title-input');
-        const bodyInput = document.getElementById('item-body-input');
-
-        // Update item data
-        item.title = titleInput.value.trim() || 'Untitled';
-        item.body = bodyInput.value;
-
-        // Re-render to show updated title
-        this.render();
-
-        // Hide panel
-        this.hideEditorPanel();
-
-        console.log('Saved changes for item:', item.id);
-    }
-
 
     // ============================================================================
     // File 
