@@ -15,18 +15,18 @@ export class App extends CanvasEditor {
         const coord = this._canvas2coord(this.state.interaction.mouse);
         this.state.interaction.selectedId = this.workspace.getNodeAtPosition(coord)
         console.log(`select(${this.state.interaction.selectedId})`);
-        
+
         switch (this.currentMode()) {
             case 'link': // selectedEndpoint is setted
                 if (this.state.interaction.selectedId) {
-                    this.world.addProjection(this.state.interaction.selectedEndpoint, 
+                    this.world.addProjection(this.state.interaction.selectedEndpoint,
                         this.state.interaction.selectedId)
                     console.log(`addProjection(${this.state.interaction.selectedEndpoint}, ${this.state.interaction.selectedId})`);
                 }
                 this.state.interaction.selectedEndpoint = null;
             case 'idle':
                 this.state.interaction.selectedEndpoint = this.workspace.getEndpointAtPosition(coord);
-        
+
                 if (this.state.interaction.selectedId) {
                     console.log('Started dragging item:', this.state.interaction.selectedId);
                 } else if (this.state.interaction.selectedEndpoint) {
@@ -48,36 +48,36 @@ export class App extends CanvasEditor {
         const coord = this._canvas2coord(this.state.interaction.mouse);
 
         switch (this.currentMode()) {
-        case 'attach':
-        case 'link':
-            // Update cursor for endpoint dragging
-            this.canvas.style.cursor = 'crosshair';
-            this.render();
-            break;
-        case 'pan':
-            // Update cursor
-            this.canvas.style.cursor = 'grabbing';
+            case 'attach':
+            case 'link':
+                // Update cursor for endpoint dragging
+                this.canvas.style.cursor = 'crosshair';
+                this.render();
+                break;
+            case 'pan':
+                // Update cursor
+                this.canvas.style.cursor = 'grabbing';
 
-            // Update camera position based on mouse movement
-            const delta = Vec.scale(
-                Vec.sub(this.state.interaction.mouse, this.state.interaction.dragStart), 
-                1 / this.state.camera.zoom);
+                // Update camera position based on mouse movement
+                const delta = Vec.scale(
+                    Vec.sub(this.state.interaction.mouse, this.state.interaction.dragStart),
+                    1 / this.state.camera.zoom);
 
-            this.setCamera(
-                this.state.interaction.lastCamera.centerX - delta.x,
-                this.state.interaction.lastCamera.centerY - delta.y,
-                null
-            );
-            this.render();
-            break;
-        case 'drag': // dragging a node/item
-            // Update cursor
-            this.canvas.style.cursor = 'move';
+                this.setCamera(
+                    this.state.interaction.lastCamera.centerX - delta.x,
+                    this.state.interaction.lastCamera.centerY - delta.y,
+                    null
+                );
+                this.render();
+                break;
+            case 'drag': // dragging a node/item
+                // Update cursor
+                this.canvas.style.cursor = 'move';
 
-            const id = this.state.interaction.selectedId;
-            this.workspace.setStyle(id, coord.x, coord.y)
-            this.render();
-            break;
+                const id = this.state.interaction.selectedId;
+                this.workspace.setStyle(id, coord.x, coord.y)
+                this.render();
+                break;
         }
     }
 
@@ -111,12 +111,12 @@ export class App extends CanvasEditor {
         this.state.interaction.mouseDown = false;
         // Change cursor back
         this.canvas.style.cursor = 'grab';
-        
+
         // Re-render to show endpoint back in original position
         this.render();
     }
     // 
-    
+
     handleGlobalClick(event) {
         const target = event.target;
 
@@ -160,7 +160,7 @@ export class App extends CanvasEditor {
 
         const itemId = this.state.interaction.selectedId;
         const item = this.world.get(itemId);
-        
+
         if (!item) {
             console.warn('Selected item not found in world:', itemId);
             return;
@@ -168,13 +168,13 @@ export class App extends CanvasEditor {
 
         // Remove from workspace (this should handle nodes cleanup via _updateNodes)
         this.workspace.delete(itemId, this.world);
-        
+
         // Clear selection
         this.state.interaction.selectedId = null;
-        
+
         // Re-render to show changes
         this.render();
-        
+
         console.log('Deleted item:', itemId, 'Type:', item.type);
     }
     hideSelectedItem() {
@@ -183,7 +183,7 @@ export class App extends CanvasEditor {
     }
     editSelectedItem() {
         if (!this.state.interaction.selectedId) return;
-        
+
         const selectedItem = this.world.get(this.state.interaction.selectedId);
         if (!selectedItem) {
             console.warn('Selected item not found in world:', this.state.interaction.selectedId);
@@ -192,12 +192,12 @@ export class App extends CanvasEditor {
 
         // Add item to workspace when editing (if not already there)
         this.workspace.add(selectedItem, this.world);
-        
+
         // Re-render to show any newly added nodes
         this.render();
 
         console.log('Item added to workspace:', selectedItem.id);
-        
+
         // Show side panel
         this.showEditorPanel(selectedItem);
     }
@@ -229,10 +229,10 @@ export class App extends CanvasEditor {
 
         // Re-render to show updated title
         this.render();
-        
+
         // Hide panel
         this.hideEditorPanel();
-        
+
         console.log('Saved changes for item:', item.id);
     }
 

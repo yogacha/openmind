@@ -40,7 +40,7 @@ function assertTrue(condition, testName) {
 
 async function runTests() {
     log('=== Testing World and Workspace JSON Serialization ===', 'bold');
-    
+
     let passedTests = 0;
     let totalTests = 0;
 
@@ -48,17 +48,17 @@ async function runTests() {
         // Load test data (adjust path for new location)
         const worldJsonPath = path.join(__dirname, '..', 'test-workspace', 'hello.world.json');
         const workspaceJsonPath = path.join(__dirname, '..', 'test-workspace', 'example.workspace.json');
-        
+
         log('\n📁 Loading JSON files...', 'blue');
         const worldJsonData = JSON.parse(fs.readFileSync(worldJsonPath, 'utf8'));
         const workspaceJsonData = JSON.parse(fs.readFileSync(workspaceJsonPath, 'utf8'));
-        
+
         log(`Loaded world.json with ${worldJsonData.items.length} items and ${worldJsonData.projections.length} projections`);
         log(`Loaded workspace1.json with ${workspaceJsonData.lights.length} lights and ${workspaceJsonData.items.length} items`);
 
         // Test World
         log('\n🌍 Testing `World` ...', 'blue');
-        
+
         // Test `World.fromObject`
         totalTests++;
         const world = World.fromObject(worldJsonData);
@@ -73,12 +73,12 @@ async function runTests() {
 
         // Test `Workspace.fromObject`
         log('\n🏢 Testing `Workspace` ...', 'blue');
-        
+
         totalTests++;
         const workspace = Workspace.fromObject(workspaceJsonData);
         assertTrue(workspace instanceof Workspace, 'Workspace.fromObject creates Workspace instance');
         if (workspace instanceof Workspace) passedTests++;
-        
+
         // Test `Workspace.toObject`
         totalTests++;
         const workspaceBackToJson = workspace.toObject();
@@ -88,7 +88,7 @@ async function runTests() {
         // Final results
         log('\n📊 Test Results:', 'bold');
         log(`Passed: ${passedTests}/${totalTests} tests`);
-        
+
         if (passedTests === totalTests) {
             log('🎉 All tests passed!', 'green');
             return true;

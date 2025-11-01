@@ -358,7 +358,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         for (const [start, mid, end] of this.projections(world)) {
             const startNode = this._nodes.get(start);
             const midNode = this._nodes.get(mid);
-            
+
             // Ensure nodes exist
             if (!startNode || !midNode) {
                 console.warn(`Missing nodes for projection ${start}-${mid}: startNode=${!!startNode}, midNode=${!!midNode}`);

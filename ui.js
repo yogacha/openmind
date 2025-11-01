@@ -203,11 +203,11 @@ export class CanvasEditor {
     /**
      * CANVAS EVENT HANDLERS
      */
-    handleCanvasMouseDown(event) {}
+    handleCanvasMouseDown(event) { }
 
-    handleCanvasMouseMove(event) {}
+    handleCanvasMouseMove(event) { }
 
-    handleCanvasMouseUp(event) {}
+    handleCanvasMouseUp(event) { }
 
     handleCanvasWheel(event) {
         event.preventDefault();
@@ -424,16 +424,16 @@ export class CanvasEditor {
 
     async openFiles() {
         console.log('Opening files: Step 1 - Select World file');
-        
+
         // Set flag to indicate we're in sequential file opening mode
         this.state.ui.openingFiles = true;
         this.state.ui.openingStep = 'world';
-        
+
         // Trigger world file selection
         document.getElementById('world-input').click();
     }
-    async handleWorldSelect(event) {}
-    async handleWorkspaceSelect(event) {}
+    async handleWorldSelect(event) { }
+    async handleWorkspaceSelect(event) { }
 
     /**
      * WINDOW EVENT HANDLERS
@@ -447,7 +447,7 @@ export class CanvasEditor {
     // ACTION METHODS (TO BE IMPLEMENTED)
     // ============================================================================
 
-    addItem(x, y, type) {}
+    addItem(x, y, type) { }
 
     pasteItem(x, y) {
         // TODO: Paste copied item
@@ -457,21 +457,21 @@ export class CanvasEditor {
         // TODO: Copy selected item to clipboard state
     }
 
-    deleteSelectedItem() {}
+    deleteSelectedItem() { }
 
-    hideSelectedItem() {}
+    hideSelectedItem() { }
 
-    saveItemChanges() {}
+    saveItemChanges() { }
 
     changeItemColor() {
         // TODO: Show color picker for light items
     }
 
-    editSelectedItem() {}
+    editSelectedItem() { }
 
-    toggleLight() {}
+    toggleLight() { }
 
-    download() {}
+    download() { }
 
     showHelpModal() {
         // TODO: Display help modal
@@ -480,7 +480,7 @@ export class CanvasEditor {
     cancelCurrentOperation() {
         // Close any open popups
         this.closeAllPopups();
-        
+
         // Clear selection
         this.state.interaction.selectedId = null;
         this.state.interaction.selectedEndpoint = null;
@@ -554,22 +554,22 @@ export class CanvasEditor {
 
         // Show panel
         panel.classList.remove('hidden');
-        
+
         // Focus on title input
         setTimeout(() => titleInput.focus(), 100);
-        
+
         console.log('Opened editor for item:', item.id);
     }
 
     hideEditorPanel() {
         const panel = document.getElementById('side-panel');
         panel.classList.add('hidden');
-        
+
         // Clear editing state
         this.state.ui.editingItemId = null;
         this.state.ui.originalTitle = null;
         this.state.ui.originalBody = null;
-        
+
         console.log('Closed editor panel');
     }
 
@@ -598,7 +598,7 @@ export class CanvasEditor {
 
     }
 
-    
+
     drawCurves() {
         if (this.currentMode() === 'link') { // link light to item
             const nodeStyle = this.workspace._nodes.get(this.state.interaction.selectedId);
@@ -609,7 +609,7 @@ export class CanvasEditor {
         }
         for (const curve of this.workspace.curves(this.world)) {
             // If this endpoint is being dragged, override its position with mouse coordinate
-            if (this.currentMode() === 'attach' && 
+            if (this.currentMode() === 'attach' &&
                 this.state.interaction.selectedEndpoint === curve.index) {
                 curve.end = this._canvas2coord(this.state.interaction.mouse);
             }
@@ -621,19 +621,19 @@ export class CanvasEditor {
         // The control point extends the line from start->mid beyond mid
         const direction = utils.Vec.sub(curve.mid, curve.start);
         const controlPoint = utils.Vec.add(curve.mid, utils.Vec.scale(direction, 0.7));
-        
+
         // Set up line style
         this.ctx.strokeStyle = curve.color;
         this.ctx.lineWidth = 3 / this.state.camera.zoom;
-        
+
         // Draw solid straight line from start to mid
         this.ctx.setLineDash([]);
         this.ctx.beginPath();
         this.ctx.moveTo(curve.start.x, curve.start.y);
         this.ctx.lineTo(curve.mid.x, curve.mid.y);
         this.ctx.stroke();
-        
-        
+
+
         // Draw dotted quadratic curve from mid to end with tangent control
         this.ctx.setLineDash([8 / this.state.camera.zoom, 6 / this.state.camera.zoom]);
         this.ctx.beginPath();
@@ -647,11 +647,11 @@ export class CanvasEditor {
             this.ctx.lineTo(curve.end.x, curve.end.y);
         }
         this.ctx.stroke();
-        
+
         // Reset line dash for other drawing operations
         this.ctx.setLineDash([]);
-        
-        this.drawEndpoint({x: curve.end.x, y: curve.end.y, color: curve.color});
+
+        this.drawEndpoint({ x: curve.end.x, y: curve.end.y, color: curve.color });
     }
 
     drawEndpoint(info, radius = endpointRadius) {

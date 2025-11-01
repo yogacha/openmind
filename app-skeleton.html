@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Untitled workspace</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- Main Canvas -->
     <canvas id="main-canvas"></canvas>
-    
+
     <!-- UI Controls -->
     <div class="ui-controls">
         <!-- Top Bar -->
@@ -19,18 +21,18 @@
                 <input type="text" id="search-bar" placeholder="Search items..." />
                 <div id="search-dropdown" class="search-dropdown hidden"></div>
             </div>
-            
+
             <button id="help-btn" class="control-btn" title="Help">❓</button>
         </div>
     </div>
-    
+
     <!-- Context Menus -->
     <div id="canvas-context-menu" class="context-menu hidden">
         <div class="menu-item" data-action="add-light">Add Light</div>
         <div class="menu-item" data-action="add-material">Add Material</div>
         <div class="menu-item" data-action="paste" id="paste-option">Paste</div>
     </div>
-    
+
     <div id="item-context-menu" class="context-menu hidden">
         <div class="menu-item" data-action="edit">Edit</div>
         <div class="menu-item" data-action="copy">Copy</div>
@@ -39,7 +41,7 @@
         <div class="menu-item" data-action="select-color" id="color-option">Change Color</div>
         <div class="menu-item" data-action="link-item" id="link-option">Link</div>
     </div>
-    
+
     <!-- Modals -->
     <div id="help-modal" class="modal hidden">
         <div class="modal-content">
@@ -50,7 +52,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Side Panel for Editing -->
     <div id="side-panel" class="side-panel hidden">
         <div class="panel-content">
@@ -58,11 +60,12 @@
             <textarea id="item-body-input" placeholder="Item content (markdown)..."></textarea>
         </div>
     </div>
-    
+
     <!-- File Input (hidden) -->
-    <input type="file" id="world-input" accept=".world.json"/>
+    <input type="file" id="world-input" accept=".world.json" />
     <input type="file" id="workspace-input" accept=".workspace.json" style="display: none;" />
-    
+
     <script type="module" src="app.js"></script>
 </body>
+
 </html>
