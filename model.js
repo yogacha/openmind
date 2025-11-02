@@ -1,6 +1,12 @@
+// @ts-check
 /**
  * @typedef {string} id
- */
+ * @typedef {'material' | 'light'} ItemType
+ * @typedef {{id: id, type: ItemType, title: string, body: string}} ItemData
+ * @typedef {{lightId: id, materialId: id, attachedId: id | null}} ProjectionData
+ * @typedef {string} color string in hex format of length 6
+ * @typedef {{x: number, y: number}} coord
+*/
 
 import utils, { Vec } from './utils.js';
 
@@ -8,10 +14,16 @@ const nodeRadius = 30; // for hit testing
 const endpointRadius = 7; // for hit testing
 
 class Item {
+    /**
+     * Constructs a new model instance.
+     * @constructor
+     * @param {string} id - Unique identifier for the model.
+     * @param {'material' | 'light'} type - The type/category of the model.
+     * @param {string} [title='Untitled'] - The title of the model (defaults to 'Untitled').
+     * @param {string} [body=''] - The body/content of the model (defaults to an empty string).
+     */
     constructor(id, type, title = 'Untitled', body = '') {
-        /** @type {id} */
         this.id = id;
-        /** @type {'material' | 'light'} */
         this.type = type;
         this.title = title;
         this.body = body;
@@ -19,6 +31,7 @@ class Item {
     toObject() {
         return { ...this };
     }
+    /** @type {(obj: ItemData) => Item} */
     static fromObject(obj) {
         return new Item(obj.id, obj.type, obj.title, obj.body);
     }
@@ -29,27 +42,33 @@ class Relations {
         /** @type {Map<id, Map<id, id | null>>} lightId => materialId => attachedId */
         this._rel = new Map();
     }
+    /** @type {(start: id, mid: id, end: id | null) => void} */
     addTriplet(start, mid, end) {
-        if (!this._rel.has(start)) {
-            this._rel.set(start, new Map());
+        let innerMap = this._rel.get(start);
+        if (!innerMap) {
+            innerMap = new Map();
+            this._rel.set(start, innerMap);
         }
         // currently end is unique for each (start, mid)
-        this._rel.get(start).set(mid, end);
+        innerMap.set(mid, end);
     }
-    removeTriplet(start, mid, end) {
-        if (this._rel.has(start) && this._rel.get(start).get(mid) === end) {
-            this._rel.get(start).set(mid, null);
-            // currently end is unique, so just set to null
-        } else { // raise error
-            throw new Error(`Triplet (${start}, ${mid}, ${end}) does not exist.`);
+    /** @type {(start: id, mid: id, end: id | null) => boolean} delete triplet, return true if existed */
+    deleteTriplet(start, mid, end) {
+        const innerMap = this._rel.get(start);
+        if (innerMap?.get(mid) === end) {
+            innerMap.set(mid, null);
+            // currently end is unique, so just set to null, (future: ?)
+            return true;
+        } else {
+            return false;
         }
     }
-    unlink(start, mid) { // remove triplets of form (start, mid, *)
-        if (this._rel.has(start)) {
-            this._rel.get(start).delete(mid);
-        }
+    /** @type {(start: id, mid: id) => void} remove triplets of form (start, mid, *) */
+    unlink(start, mid) {
+        this._rel.get(start)?.delete(mid);
     }
-    unlinkAll(id) { // remove as source / mid / end 
+    /** @type {(id: id) => void} remove id as source / mid / end */
+    unlinkAll(id) {
         this._rel.delete(id); // remove as source
         for (const mid2end of this._rel.values()) {
             mid2end.delete(id); // remove as mid
@@ -70,6 +89,7 @@ class Relations {
         }
         return array;
     }
+    /** @type {(obj: {lightId: id, materialId: id, attachedId: id | null}[]) => Relations} */
     static fromObject(obj) {
         const proj = new Relations();
         obj.forEach(entry => {
@@ -94,6 +114,7 @@ class World {
             projections: this.projections.toObject(),
         };
     }
+    /** @type {(obj: {items: ItemData[], projections: ProjectionData[]}) => World} */
     static fromObject(obj) {
         const world = new World();
         obj.items.forEach(item => {
@@ -102,14 +123,19 @@ class World {
         world.projections = Relations.fromObject(obj.projections);
         return world;
     }
+    /** @type {(type: ItemType) => Item} */
     newItem(type) {
         let id = utils.randId();
         while (this.has(id)) { id = utils.randId(); }
         return new Item(id, type);
     }
+    /** @type {(id: id) => boolean} */
     has(id) { return this.items.has(id); }
+    /** @type {(id: id) => Item | undefined} */
     get(id) { return this.items.get(id); }
+    /** @type {(item: Item) => void} */
     add(item) { this.items.set(item.id, item); }
+    /** @type {(id: id) => boolean} */
     delete(id) {
         const exist = this.has(id);
 
@@ -119,24 +145,30 @@ class World {
         }
         return exist;
     }
+    /** @type {(lightId: id, materialId: id) => void} */
     addProjection(lightId, materialId) {  // pair light and material, since it's a new projection, attachedId is null
         this.projections.addTriplet(lightId, materialId, null);
     }
+    /** @type {(lightId: id, materialId: id) => void} */
     removeProjection(lightId, materialId) {  // unpair light and material
         this.projections.unlink(lightId, materialId);
     }
-    getAttachment(lightId, materialId) {  // assume lightId and materialId exist, otherwise return undefined
-        if (!this.projections._rel.has(lightId)) return undefined;
-        if (!this.projections._rel.get(lightId).has(materialId)) return undefined;
-        return this.projections._rel.get(lightId).get(materialId); // return attachedId or null
+    /** return attachedId for given lightId and materialId, undefined if not exist
+     * @param {id} lightId
+     * @param {id} materialId 
+     * @returns {id | null | undefined}} */
+    getAttachment(lightId, materialId) {
+        return this.projections._rel.get(lightId)?.get(materialId);
     }
+    /** @type {(lightId: id, materialId: id, attachedId: id | null) => void} */
     addAttachment(lightId, materialId, attachedId) { // link material to shadow (projection)
         this.projections.addTriplet(lightId, materialId, attachedId); // #
     }
+    /** @type {(lightId: id, materialId: id, attachedId: id | null) => void} */
     removeAttachment(lightId, materialId, attachedId) { // unlink material from shadow (projection), 
-        this.projections.removeTriplet(lightId, materialId, attachedId);
+        this.projections.deleteTriplet(lightId, materialId, attachedId);
     }
-    isLight(id) { return this.get(id).type === 'light'; }
+    /** @type {(query: string) => Item[]} */
     searchTitle(query) { // return list of items that match the query in title
         const results = [];
         for (const item of this.items.values()) {
@@ -157,10 +189,10 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.lights = new Map();
         /** @type {Set<id>} ids of items (lights & materials) in attention */
         this.items = new Set();
-        /** @type {Map<id, {x: number, y: number, color: string}>} */
-        this._nodes = new Map(); // id => {x, y, color}, style info for items in attention
-        /** @type {Map<string, {x: number, y: number}>} */
-        this._endpoints = new Map(); // id => {x, y}, layout info for items in attention (future)   
+        /** @type {Map<id, {x: number, y: number, color: string}>} style info for items in attention */
+        this._nodes = new Map();
+        /** @type {Map<id, {x: number, y: number, isNull: boolean}>} drag points for attachment endpoints */
+        this._endpoints = new Map();
     }
     toObject() {
         return {
@@ -169,6 +201,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             // nodes: 
         };
     }
+    /** @type {(obj: {lights: {id: id, status: 'On'|'Off'}[], items: id[]}) => Workspace} */
     static fromObject(obj) {
         const ws = new Workspace();
         for (const it of obj.lights) {
@@ -180,6 +213,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         // TODO: nodes: 
         return ws;
     }
+    /** @type {(world: World) => void} */
     initializeNodes(world) { // random position
         // Remove items not in world
         const itemsToDelete = [];
@@ -191,6 +225,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         this._updateNodes(world);
     }
+    /** @type {(id: id) => color} */
     colour(id) { // default colour for light/material/visibleOnly nodes
         if (this.items.has(id)) {
             return this.lights.has(id) ? '#ffff00' : '#ffffff';
@@ -216,12 +251,15 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         world.delete(id); // remove from world first
         this.hide(id, world);
     }
+    /** @type {(id: id, world: World) => void} */
     hide(id, world) { // remove from attention, but keep in world
         this.lights.delete(id);
         this.items.delete(id);
         this._updateNodes(world);
     }
+    /** @type {(id: id) => boolean} */
     hasNode(id) { return this._nodes.has(id); }
+    /** @type {(coord: coord, delta?: number) => id | null} */
     getNodeAtPosition(coord, delta = nodeRadius) {
         for (const [id, pos] of this._nodes.entries()) {
             if (Vec.dist(pos, coord) <= delta) {
@@ -230,6 +268,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return null;
     }
+    /** @type {(coord: coord, delta?: number) => id | null} */
     getEndpointAtPosition(coord, delta = endpointRadius + 2) {
         for (const [index, pos] of this._endpoints.entries()) {
             if (Vec.dist(pos, coord) <= delta) {
@@ -238,21 +277,22 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
         return null;
     }
+    /** @type {(id: id, status: 'On'|'Off', world: World) => void} */
     setLight(id, status, world) {
         if (!this.lights.has(id)) { return; }
         this.lights.set(id, status);
         this._updateNodes(world);
     }
+    /** @type {(id: id, x?: number | null, y?: number | null, color?: color | null) => void} */
     setStyle(id, x = null, y = null, color = null) {
-        const a = x || 1;
-        if (this._nodes.has(id)) {
+        const style = this._nodes.get(id);
+        if (style) {
             this._nodes.set(id, {
-                x: x ?? this._nodes.get(id).x,
-                y: y ?? this._nodes.get(id).y,
-                color: color ?? this._nodes.get(id).color
+                x: x ?? style.x, y: y ?? style.y, color: color ?? style.color,
             });
         }
     }
+    /** @type {(world: World) => Iterable<{id: id, type: ItemType, title: string, x: number, y: number, color: string}>} */
     *nodes(world) {
         // this._updateNodes(world); // unneeded since we update on every add/delete/hide
         for (const [id, info] of this._nodes.entries()) {
@@ -283,6 +323,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             }
         }
     }
+    /** @type {(world: World) => Iterable<{index: string, start: coord, mid: coord, end: {x: number, y: number, isNull: boolean}, color: string}>} */
     *curves(world) {
         this._updateEndpoints(world);
 
@@ -291,6 +332,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             const startNode = this._nodes.get(start);
             const midNode = this._nodes.get(mid);
             const endpoint = this._endpoints.get(index);
+
+            if (!startNode || !midNode) continue; // skip if nodes missing, inpossible case, just for type safety
 
             // Check if endpoint exists to prevent undefined errors
             if (!endpoint) {
@@ -302,7 +345,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 index,
                 start: { x: startNode.x, y: startNode.y },
                 mid: { x: midNode.x, y: midNode.y },
-                end: { x: endpoint.x, y: endpoint.y, isNull: endpoint.isNull },
+                end: endpoint,
                 color: startNode.color,
             }
         }
@@ -326,6 +369,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         }
     }
     // private methods
+    /** @type {(world: World) => void} */
     _updateNodes(world) {
         // set default color and random position for missing items ONLY
         for (const id of this.items) {
@@ -344,7 +388,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         // const visibleOnly = new Set();
         const visibleOnly = new Map();
         for (const [start, mid, id] of this.projections(world)) {
-            if (!this.items.has(id) && !visibleOnly.has(id)) {
+            if (id && !this.items.has(id) && !visibleOnly.has(id)) {
                 visibleOnly.set(id,
                     Vec.antipode(this._nodes.get(mid), this._nodes.get(start))
                 );
@@ -367,6 +411,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             }
         }
     }
+    /** @type {(world: World) => void} */
     _updateEndpoints(world) {
         this._endpoints.clear();
         for (const [start, mid, end] of this.projections(world)) {
@@ -394,7 +439,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                     midNode, Vec.normalize(direction, 4 * nodeRadius)
                 );
             }
-            endpoint.isNull = (end === null);
+            endpoint = { x: endpoint.x, y: endpoint.y, isNull: (end === null) };
             this._endpoints.set(`${start}-${mid}`, endpoint);
         }
     }
