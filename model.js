@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * @typedef {string} id
- * @typedef {'material' | 'light'} ItemType
+ * @typedef {'material' | 'light' | 'axis'} ItemType
  * @typedef {{id: id, type: ItemType, title: string, body: string}} ItemData
  * @typedef {{startId: id, midId: id, endId: id | null}} ProjectionData
  * @typedef {string} color string in hex format of length 6
@@ -18,7 +18,7 @@ class Item {
      * Constructs a new model instance.
      * @constructor
      * @param {string} id - Unique identifier for the model.
-     * @param {'material' | 'light'} type - The type/category of the model.
+     * @param {ItemType} type - The type/category of the model.
      * @param {string} [title='Untitled'] - The title of the model (defaults to 'Untitled').
      * @param {string} [body=''] - The body/content of the model (defaults to an empty string).
      */
@@ -36,25 +36,24 @@ class Item {
         return new Item(obj.id, obj.type, obj.title, obj.body);
     }
 }
-
-class Relations {
+/** @extends {Map<id, Map<id, id | null>>} startId => midId => endId, i.e. light => item => item | null) */
+class Relations extends Map {
     constructor() {
-        /** @type {Map<id, Map<id, id | null>>} lightId => materialId => attachedId */
-        this._rel = new Map();
+        super();
     }
     /** @type {(proj: ProjectionData) => void} */
     addTriplet(proj) {
-        let innerMap = this._rel.get(proj.startId);
+        let innerMap = this.get(proj.startId);
         if (!innerMap) {
             innerMap = new Map();
-            this._rel.set(proj.startId, innerMap);
+            this.set(proj.startId, innerMap);
         }
         // currently end is unique for each (start, mid)
         innerMap.set(proj.midId, proj.endId);
     }
     /** @type {(proj: ProjectionData) => boolean} delete triplet, return true if existed */
     deleteTriplet(proj) {
-        const innerMap = this._rel.get(proj.startId);
+        const innerMap = this.get(proj.startId);
         if (innerMap?.get(proj.midId) === proj.endId) {
             innerMap.set(proj.midId, null);
             // currently end is unique, so just set to null, (future: ?)
@@ -63,14 +62,14 @@ class Relations {
             return false;
         }
     }
-    /** @type {(arg0: id, arg1: id) => void} remove triplets of form (start, mid, *) */
+    /** @type {(arg0: id, arg1: id) => boolean} remove triplets of form (start, mid, *) */
     unlink(startId, midId) {
-        this._rel.get(startId)?.delete(midId);
+        return this.get(startId)?.delete(midId) ?? false;
     }
     /** @type {(id: id) => void} remove id as light / material / end */
     unlinkAll(id) {
-        this._rel.delete(id); // remove as light
-        for (const mid2end of this._rel.values()) {
+        this.delete(id); // remove as light
+        for (const mid2end of this.values()) {
             mid2end.delete(id); // remove as material
             for (const [midId, endId] of mid2end.entries()) {
                 if (endId === id) {
@@ -80,9 +79,10 @@ class Relations {
             }
         }
     }
+    /** @type {() => ProjectionData[]} */
     toObject() {
         const array = [];
-        for (const [startId, mid2end] of this._rel.entries()) {
+        for (const [startId, mid2end] of this.entries()) {
             for (const [midId, endId] of mid2end.entries()) {
                 array.push({ startId, midId, endId });
             }
@@ -158,7 +158,7 @@ class World {
      * @param {id} materialId 
      * @returns {id | null | undefined}} */
     getAttachment(lightId, materialId) {
-        return this.projections._rel.get(lightId)?.get(materialId);
+        return this.projections.get(lightId)?.get(materialId);
     }
     /** @type {(lightId: id, materialId: id, attachedId: id | null) => void} */
     addAttachment(lightId, materialId, attachedId) { // link material to shadow (projection)
