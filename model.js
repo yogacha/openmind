@@ -3,7 +3,7 @@
  * @typedef {string} id
  * @typedef {'material' | 'light'} ItemType
  * @typedef {{id: id, type: ItemType, title: string, body: string}} ItemData
- * @typedef {{lightId: id, materialId: id, attachedId: id | null}} ProjectionData
+ * @typedef {{startId: id, midId: id, endId: id | null}} ProjectionData
  * @typedef {string} color string in hex format of length 6
  * @typedef {{x: number, y: number}} coord
 */
@@ -42,39 +42,39 @@ class Relations {
         /** @type {Map<id, Map<id, id | null>>} lightId => materialId => attachedId */
         this._rel = new Map();
     }
-    /** @type {(start: id, mid: id, end: id | null) => void} */
-    addTriplet(start, mid, end) {
-        let innerMap = this._rel.get(start);
+    /** @type {(proj: ProjectionData) => void} */
+    addTriplet(proj) {
+        let innerMap = this._rel.get(proj.startId);
         if (!innerMap) {
             innerMap = new Map();
-            this._rel.set(start, innerMap);
+            this._rel.set(proj.startId, innerMap);
         }
         // currently end is unique for each (start, mid)
-        innerMap.set(mid, end);
+        innerMap.set(proj.midId, proj.endId);
     }
-    /** @type {(start: id, mid: id, end: id | null) => boolean} delete triplet, return true if existed */
-    deleteTriplet(start, mid, end) {
-        const innerMap = this._rel.get(start);
-        if (innerMap?.get(mid) === end) {
-            innerMap.set(mid, null);
+    /** @type {(proj: ProjectionData) => boolean} delete triplet, return true if existed */
+    deleteTriplet(proj) {
+        const innerMap = this._rel.get(proj.startId);
+        if (innerMap?.get(proj.midId) === proj.endId) {
+            innerMap.set(proj.midId, null);
             // currently end is unique, so just set to null, (future: ?)
             return true;
         } else {
             return false;
         }
     }
-    /** @type {(start: id, mid: id) => void} remove triplets of form (start, mid, *) */
-    unlink(start, mid) {
-        this._rel.get(start)?.delete(mid);
+    /** @type {(arg0: id, arg1: id) => void} remove triplets of form (start, mid, *) */
+    unlink(startId, midId) {
+        this._rel.get(startId)?.delete(midId);
     }
-    /** @type {(id: id) => void} remove id as source / mid / end */
+    /** @type {(id: id) => void} remove id as light / material / end */
     unlinkAll(id) {
-        this._rel.delete(id); // remove as source
+        this._rel.delete(id); // remove as light
         for (const mid2end of this._rel.values()) {
-            mid2end.delete(id); // remove as mid
-            for (const [mid, end] of mid2end.entries()) {
-                if (end === id) {
-                    mid2end.set(mid, null); // remove as end
+            mid2end.delete(id); // remove as material
+            for (const [midId, endId] of mid2end.entries()) {
+                if (endId === id) {
+                    mid2end.set(midId, null); // remove as end
                     // the mapping remains, but end is set to null
                 }
             }
@@ -82,18 +82,18 @@ class Relations {
     }
     toObject() {
         const array = [];
-        for (const [lightId, materialMap] of this._rel.entries()) {
-            for (const [materialId, attachedId] of materialMap.entries()) {
-                array.push({ lightId, materialId, attachedId });
+        for (const [startId, mid2end] of this._rel.entries()) {
+            for (const [midId, endId] of mid2end.entries()) {
+                array.push({ startId, midId, endId });
             }
         }
         return array;
     }
-    /** @type {(obj: {lightId: id, materialId: id, attachedId: id | null}[]) => Relations} */
+    /** @type {(obj: ProjectionData[]) => Relations} */
     static fromObject(obj) {
         const proj = new Relations();
         obj.forEach(entry => {
-            proj.addTriplet(entry.lightId, entry.materialId, entry.attachedId);
+            proj.addTriplet(entry);
         });
         return proj;
     }
@@ -147,7 +147,7 @@ class World {
     }
     /** @type {(lightId: id, materialId: id) => void} */
     addProjection(lightId, materialId) {  // pair light and material, since it's a new projection, attachedId is null
-        this.projections.addTriplet(lightId, materialId, null);
+        this.projections.addTriplet({ startId: lightId, midId: materialId, endId: null });
     }
     /** @type {(lightId: id, materialId: id) => void} */
     removeProjection(lightId, materialId) {  // unpair light and material
@@ -162,17 +162,17 @@ class World {
     }
     /** @type {(lightId: id, materialId: id, attachedId: id | null) => void} */
     addAttachment(lightId, materialId, attachedId) { // link material to shadow (projection)
-        this.projections.addTriplet(lightId, materialId, attachedId); // #
+        this.projections.addTriplet({ startId: lightId, midId: materialId, endId: attachedId });
     }
     /** @type {(lightId: id, materialId: id, attachedId: id | null) => void} */
     removeAttachment(lightId, materialId, attachedId) { // unlink material from shadow (projection), 
-        this.projections.deleteTriplet(lightId, materialId, attachedId);
+        this.projections.deleteTriplet({ startId: lightId, midId: materialId, endId: attachedId });
     }
     /** @type {(query: string, skipset: Set<id>) => Item[]} items that contains query in title (case-insensitive) */
     searchTitle(query, skipset) {
         if (query.length === 0) { return []; }
         const lowerQuery = query.toLowerCase();
-        return Array.from(this.items.values()).filter(item => 
+        return Array.from(this.items.values()).filter(item =>
             !skipset.has(item.id) && item.title.toLowerCase().includes(lowerQuery)
         );
         // return Array.from(this.items.values()).filter(item => 

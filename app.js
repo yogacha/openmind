@@ -127,7 +127,7 @@ export class App extends CanvasEditor {
             case 'attach':
                 const [startId, midId] = this.state.interaction.selectedEndpoint.split('-');
                 if (!this.world.getAttachment(startId, midId)) {
-                    this.addItem('material');
+                    this.newItem('material');
                     const itemId = this.workspace.getNodeAtPosition(coord);
                     this.addAttachment(startId, midId, itemId);
                     console.log(`extend ${startId}->${midId} as ${itemId}`);
@@ -156,7 +156,7 @@ export class App extends CanvasEditor {
     // ===========================================================================
     // Action METHODS
     // ===========================================================================
-    addItem(type) {
+    newItem(type) {
         const item = this.world.newItem(type);
         const coord = this._canvas2coord(this.state.interaction.mouse);
         // add to attention

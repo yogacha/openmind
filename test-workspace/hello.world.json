@@ -45,24 +45,24 @@
   ],
   "projections": [
     {
-      "lightId": "light1abc123def456",
-      "materialId": "mat1mno345pqr678",
-      "attachedId": "shadow1fgh123ijk456"
+      "startId": "light1abc123def456",
+      "midId": "mat1mno345pqr678",
+      "endId": "shadow1fgh123ijk456"
     },
     {
-      "lightId": "light1abc123def456", 
-      "materialId": "mat2stu901vwx234",
-      "attachedId": "shadow2lmn789opq012"
+      "startId": "light1abc123def456", 
+      "midId": "mat2stu901vwx234",
+      "endId": "shadow2lmn789opq012"
     },
     {
-      "lightId": "light2ghi789jkl012",
-      "materialId": "mat1mno345pqr678",
-      "attachedId": null
+      "startId": "light2ghi789jkl012",
+      "midId": "mat1mno345pqr678",
+      "endId": null
     },
     {
-      "lightId": "light2ghi789jkl012",
-      "materialId": "mat3yzab567cde890",
-      "attachedId": null
+      "startId": "light2ghi789jkl012",
+      "midId": "mat3yzab567cde890",
+      "endId": null
     }
   ]
 }

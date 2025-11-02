@@ -23,7 +23,7 @@ const endpointRadius = 7; // for hit testing
 /** @type {Map<ItemType, string>} */
 const icons = new Map([
     ['light', '💡'],
-    ['material', '📦'],
+    ['material', '🪨'],
 ]);
 
 export class CanvasEditor {
@@ -325,10 +325,10 @@ export class CanvasEditor {
     executeContextAction(action, event) {
         switch (action) {
             case 'add-light':
-                this.addItem('light');
+                this.newItem('light');
                 break;
             case 'add-material':
-                this.addItem('material');
+                this.newItem('material');
                 break;
             case 'delete':
                 this.deleteSelectedItem();
@@ -554,7 +554,7 @@ export class CanvasEditor {
     // ACTION METHODS (TO BE IMPLEMENTED)
     // ============================================================================
 
-    addItem(type) { }
+    newItem(type) { }
 
     deleteSelectedItem() { }
 
