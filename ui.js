@@ -1,7 +1,6 @@
 /**
- * @typedef {Object} Coord
- * @property {number} x - The x-coordinate.
- * @property {number} y - The y-coordinate.
+ * @typedef {'material' | 'light'} ItemType
+ * @typedef {{x: number, y: number}} coord
  */
 
 /**
@@ -20,6 +19,12 @@ import { World, Workspace } from './model.js';
 
 const nodeRadius = 30;
 const endpointRadius = 7; // for hit testing
+
+/** @type {Map<ItemType, string>} */
+const icons = new Map([
+    ['light', '💡'],
+    ['material', '📦'],
+]);
 
 export class CanvasEditor {
     constructor() {
@@ -264,17 +269,24 @@ export class CanvasEditor {
      */
     handleGlobalClick(event) {
         const target = event.target;
+        
+        console.info('Global click target:', target.className, target.tagName);
 
         // Route to specific handlers based on element attributes/classes
         if (target.classList.contains('control-btn')) {
             this.handleControlButton(target, event);
         } else if (target.classList.contains('close-btn')) {
             this.handleCloseButton(target, event);
-        } else if (target.id === 'search-dropdown') {
-            this.handleSearchItemClick(target, event);
-        } else if (!target.closest('.modal, .context-menu, .side-panel, .inline-title-editor')) {
+        } else if (target.classList.contains('search-result-item') || target.closest('.search-result-item')) {
+            // Let search result items handle their own clicks
+            const itemId = target.dataset.itemId || target.closest('.search-result-item').dataset.itemId;
+            this.handleSearchItemClick(itemId);
+            this.hideSearchDropdown();
+            return;
+        } else if (!target.closest('.modal, .context-menu, .side-panel, .inline-title-editor, .search-container, .search-dropdown')) {
             // Click outside modals/menus - close them
             // Save editor changes if panel is open
+            console.log('click outside detected');
             if (this.state.ui.editingItemId) {
                 this.saveItemChanges();
             } else if (this.state.ui.inlineTitleEditId) {
@@ -342,20 +354,70 @@ export class CanvasEditor {
      * SEARCH EVENT HANDLERS
      */
     handleSearchInput(event) {
-        const query = event.target.value;
-        // TODO: Filter items and show dropdown
+        const query = event.target.value.trim();
+        this.state.ui.searchResults = this.world.searchTitle(query);
+        this.showSearchDropdown();
     }
 
     handleSearchFocus(event) {
-        // TODO: Show search dropdown if there are results
+        const query = event.target.value.trim();
+        if (query.length > 0 && this.state.ui.searchResults.length > 0) {
+            this.showSearchDropdown();
+            console.log('focus: ' + query + ' ' + this.state.ui.searchResults.length);
+        }
     }
 
     handleSearchBlur(event) {
-        // TODO: Hide search dropdown (with delay for click handling)
+        // Hide search dropdown with delay to allow for click handling
+        setTimeout(() => {
+            this.hideSearchDropdown();
+        }, 150);
     }
 
-    handleSearchItemClick(event) {
-        // TODO: Add selected item to canvas/attention
+    handleSearchItemClick(id) {
+        const item = this.world.get(id);
+        this.workspace.add(item, this.world);
+        this.workspace.setStyle(id, this.state.camera.centerX, this.state.camera.centerY);
+        this.state.interaction.selectedId = id;
+        this.render();
+    }
+
+    showSearchDropdown() {
+        const dropdown = document.getElementById('search-dropdown');
+
+        if (this.state.ui.searchResults.length === 0) {
+            this.hideSearchDropdown();
+            return;
+        }
+
+        // Clear existing content
+        dropdown.innerHTML = '';
+
+        // Add each search result
+        this.state.ui.searchResults.forEach((item, index) => {
+            const element = document.createElement('div');
+            element.className = 'search-result-item';
+            element.dataset.itemId = item.id;
+            element.dataset.index = index;
+
+            const title = icons.get(item.type) + ' ' + item.title;
+
+            // Create the item HTML
+            element.innerHTML = `
+                <div class="search-result-title">${utils.escapeHtml(title)}</div>`;
+
+            element.addEventListener('mousedown', (e) => {
+                console.debug('Dropdown item mousedown:', item.id);
+                e.preventDefault();
+                // e.stopPropagation();
+                // e.stopImmediatePropagation();
+            });
+
+            dropdown.appendChild(element);
+        });
+
+        // Show the dropdown
+        dropdown.classList.remove('hidden');
     }
 
     /**
@@ -565,15 +627,18 @@ export class CanvasEditor {
         this.hideHelpModal();
         this.hideEditorPanel();
         this.hideInlineTitleEditor();
-
-        // Hide search dropdown
-        document.getElementById('search-dropdown').classList.add('hidden');
+        // this.hideSearchDropdown();
     }
 
     hideContextMenu() {
         document.getElementById('canvas-context-menu').classList.add('hidden');
         document.getElementById('item-context-menu').classList.add('hidden');
         this.state.ui.contextMenuVisible = false;
+    }
+
+    hideSearchDropdown() { // Noti
+        const dropdown = document.getElementById('search-dropdown');
+        dropdown.classList.add('hidden');
     }
 
     showCanvasContextMenu() {
@@ -662,8 +727,6 @@ export class CanvasEditor {
         this.state.ui.editingItemId = null;
         this.state.ui.originalTitle = null;
         this.state.ui.originalBody = null;
-
-        console.log('Closed editor panel');
     }
 
     hideInlineTitleEditor() {

@@ -151,29 +151,6 @@ export class App extends CanvasEditor {
         this.render();
     }
 
-    handleGlobalClick(event) {
-        const target = event.target;
-
-        // Route to specific handlers based on element attributes/classes
-        if (target.classList.contains('control-btn')) {
-            this.handleControlButton(target, event);
-        } else if (target.classList.contains('close-btn')) {
-            this.handleCloseButton(target, event);
-        } else if (target.id === 'search-dropdown') {
-            this.handleSearchItemClick(target, event);
-        } else if (!target.closest('.modal, .context-menu, .side-panel, .inline-title-editor')) {
-            // Click outside modals/menus - close them
-            // Save editor changes if panel is open
-            if (this.state.ui.editingItemId) {
-                this.saveItemChanges();
-            } else if (this.state.ui.inlineTitleEditId) {
-                this.saveInlineTitleChanges();
-            } else {
-                this.closeAllPopups();
-            }
-        }
-    }
-
 
 
     // ===========================================================================
