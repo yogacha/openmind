@@ -1,0 +1,34 @@
+{
+  "lights": [
+    {
+      "id": "2s2yzxzrm8qlv5jre5o2p",
+      "status": "Off"
+    },
+    {
+      "id": "ho8pxj6qrigpvipy3rxll9",
+      "status": "Off"
+    },
+    {
+      "id": "vvui010mues379ipuku5hd",
+      "status": "On"
+    },
+    {
+      "id": "clw8xnpkq28e126xk3lfhi",
+      "status": "On"
+    },
+    {
+      "id": "419rnmpa7xsjvcv23kf0bp",
+      "status": "On"
+    }
+  ],
+  "items": [
+    "2s2yzxzrm8qlv5jre5o2p",
+    "dr0msdxwzvwd49hom5ny2",
+    "rd51tg7erxtfbkzro9molf",
+    "ho8pxj6qrigpvipy3rxll9",
+    "vvui010mues379ipuku5hd",
+    "clw8xnpkq28e126xk3lfhi",
+    "419rnmpa7xsjvcv23kf0bp",
+    "edaermcw51ppmlbc63piy"
+  ]
+}

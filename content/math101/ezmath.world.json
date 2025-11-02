@@ -1,0 +1,91 @@
+{
+  "items": [
+    {
+      "id": "2s2yzxzrm8qlv5jre5o2p",
+      "type": "light",
+      "title": "♾️infinite",
+      "body": ""
+    },
+    {
+      "id": "dr0msdxwzvwd49hom5ny2",
+      "type": "material",
+      "title": "數字",
+      "body": ""
+    },
+    {
+      "id": "rd51tg7erxtfbkzro9molf",
+      "type": "material",
+      "title": "單位(長度)",
+      "body": ""
+    },
+    {
+      "id": "ho8pxj6qrigpvipy3rxll9",
+      "type": "light",
+      "title": "維度推廣",
+      "body": ""
+    },
+    {
+      "id": "uz20gsea10mak8is6m541d",
+      "type": "material",
+      "title": "面積",
+      "body": ""
+    },
+    {
+      "id": "vvui010mues379ipuku5hd",
+      "type": "light",
+      "title": "抽象化",
+      "body": ""
+    },
+    {
+      "id": "clw8xnpkq28e126xk3lfhi",
+      "type": "light",
+      "title": "具體化",
+      "body": "提出特例:\n\n\n(未來應該一對多?這樣才能看出OO,XX,...都是YY的特例\n視覺語言: right click endpoint -> copy)"
+    },
+    {
+      "id": "x57l7cn9uubvypck2t4s",
+      "type": "material",
+      "title": "體積",
+      "body": ""
+    },
+    {
+      "id": "419rnmpa7xsjvcv23kf0bp",
+      "type": "light",
+      "title": "提出問題",
+      "body": ""
+    },
+    {
+      "id": "edaermcw51ppmlbc63piy",
+      "type": "material",
+      "title": "刻度不夠怎麼辦?",
+      "body": ""
+    }
+  ],
+  "projections": [
+    {
+      "startId": "ho8pxj6qrigpvipy3rxll9",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "uz20gsea10mak8is6m541d"
+    },
+    {
+      "startId": "ho8pxj6qrigpvipy3rxll9",
+      "midId": "uz20gsea10mak8is6m541d",
+      "endId": "x57l7cn9uubvypck2t4s"
+    },
+    {
+      "startId": "vvui010mues379ipuku5hd",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "dr0msdxwzvwd49hom5ny2"
+    },
+    {
+      "startId": "clw8xnpkq28e126xk3lfhi",
+      "midId": "dr0msdxwzvwd49hom5ny2",
+      "endId": "rd51tg7erxtfbkzro9molf"
+    },
+    {
+      "startId": "419rnmpa7xsjvcv23kf0bp",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "edaermcw51ppmlbc63piy"
+    }
+  ]
+}
