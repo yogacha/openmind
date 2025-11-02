@@ -118,6 +118,12 @@ body {
     margin-bottom: 2px;
 }
 
+.search-result-body {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 2px;
+}
+
 .search-result-type {
     font-size: 12px;
     color: #666;

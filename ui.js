@@ -280,7 +280,7 @@ export class CanvasEditor {
         } else if (target.classList.contains('search-result-item') || target.closest('.search-result-item')) {
             // Let search result items handle their own clicks
             const itemId = target.dataset.itemId || target.closest('.search-result-item').dataset.itemId;
-            this.handleSearchItemClick(itemId);
+            this.handleSearchItemSelect(itemId);
             this.hideSearchDropdown();
             return;
         } else if (!target.closest('.modal, .context-menu, .side-panel, .inline-title-editor, .search-container, .search-dropdown')) {
@@ -370,7 +370,7 @@ export class CanvasEditor {
         }, 150);
     }
 
-    handleSearchItemClick(id) {
+    handleSearchItemSelect(id) {
         const item = this.world.get(id);
 
         if (this.workspace.hasNode(id)) {
@@ -401,11 +401,12 @@ export class CanvasEditor {
             element.dataset.itemId = item.id;
             element.dataset.index = index;
 
-            const title = icons.get(item.type) + ' ' + item.title;
-
+            const title = utils.escapeHtml(icons.get(item.type) + ' ' + item.title);
+            const bodyPreview = utils.escapeHtml(item.body.slice(0, 50)) + (item.body.length > 50 ? '...' : '');
             // Create the item HTML
             element.innerHTML = `
-                <div class="search-result-title">${utils.escapeHtml(title)}</div>`;
+                <div class="search-result-title">${title}</div>
+                <div class="search-result-body">${bodyPreview}</div>`
 
             element.addEventListener('mousedown', (e) => {
                 console.debug('Dropdown item mousedown:', item.id);
