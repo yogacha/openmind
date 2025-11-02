@@ -4,6 +4,7 @@
  * @typedef {'material' | 'light' | 'axis'} ItemType
  * @typedef {{id: id, type: ItemType, title: string, body: string}} ItemData
  * @typedef {{startId: id, midId: id, endId: id | null}} ProjectionData
+ * @typedef {{axisId: id, itemId: id, value: number}} MeasurementData
  * @typedef {string} color string in hex format of length 6
  * @typedef {{x: number, y: number}} coord
 */
@@ -99,28 +100,77 @@ class Relations extends Map {
     }
 }
 
-// Future: AxisItem 
+/** @extends {Map<id, Map<id, number>>} axisId => itemId => number */
+class Measurements extends Map {
+    constructor() {
+        super();
+    }
+    /** @type {(measurement: MeasurementData) => void} set item value on axis */
+    setValue(measurement) {
+        let innerMap = this.get(measurement.axisId);
+        if (!innerMap) {
+            innerMap = new Map();
+            this.set(measurement.axisId, innerMap);
+        }
+        innerMap.set(measurement.itemId, measurement.value);
+    }
+    /** @type {(axisId: id, itemId: id) => number | undefined} get item value on axis */
+    getValue(axisId, itemId) {
+        return this.get(axisId)?.get(itemId);
+    }
+    /** @type {(axisId: id, itemId: id) => boolean} delete measurement, return true if existed */
+    unlink(axisId, itemId) {
+        return this.get(axisId)?.delete(itemId) ?? false;
+    }
+    /** @type {(id: id) => void} remove all measurements related id */
+    unlinkAll(id) {
+        this.delete(id); // remove as axis
+        for (const item2value of this.values()) {
+            item2value.delete(id); // remove as item
+        }
+    }
+    /** @type {() => MeasurementData[]} */
+    toObject() {
+        const array = [];
+        for (const [axisId, item2value] of this.entries()) {
+            for (const [itemId, value] of item2value.entries()) {
+                array.push({ axisId, itemId, value });
+            }
+        }
+        return array;
+    }
+    /** @type {(obj: MeasurementData[]) => Measurements} */
+    static fromObject(obj) {
+        const axes = new Measurements();
+        obj.forEach(entry => {
+            axes.setValue(entry);
+        });
+        return axes;
+    }
+}
 
 class World {
     constructor() {
         /** @type {Map<id, Item>} */
         this.items = new Map();
         this.projections = new Relations();
-        // this.axes = new Map(); // id => AxisItem (future)
+        this.axes = new Measurements();
     }
     toObject() {
         return {
             items: Array.from(this.items.values()).map(item => item.toObject()),
             projections: this.projections.toObject(),
+            axes: this.axes.toObject(),
         };
     }
-    /** @type {(obj: {items: ItemData[], projections: ProjectionData[]}) => World} */
+    /** @type {(obj: {items: ItemData[], projections: ProjectionData[], axes: MeasurementData[]}) => World} */
     static fromObject(obj) {
         const world = new World();
         obj.items.forEach(item => {
             world.items.set(item.id, Item.fromObject(item));
         });
         world.projections = Relations.fromObject(obj.projections);
+        world.axes = Measurements.fromObject(obj.axes);
         return world;
     }
     /** @type {(type: ItemType) => Item} */
@@ -142,6 +192,7 @@ class World {
         if (exist) {
             this.items.delete(id); // remove item from world
             this.projections.unlinkAll(id); // remove projections related to this item
+            this.axes.unlinkAll(id); // remove measurements related to this axis
         }
         return exist;
     }
@@ -175,9 +226,6 @@ class World {
         return Array.from(this.items.values()).filter(item =>
             !skipset.has(item.id) && item.title.toLowerCase().includes(lowerQuery)
         );
-        // return Array.from(this.items.values()).filter(item => 
-        //     item.title.toLowerCase().includes(lowerQuery)
-        // );
     }
 }
 
