@@ -18,7 +18,6 @@ what data we store, how we strore them
     * `materialId`: id of the projected material
     * `attachedId`: id or null, if null, shadow not yet linked to any item
 * `workspace.json`: current state of shaape
-  * `dataPath`: path of `world.json`, always not null
   * `lights`: list of lights in attention
     * `id`: id of light
     * `status`: 'On' or 'Off'
@@ -36,8 +35,6 @@ what data we store, how we strore them
     * shadow: circle slightly larger than material item,  same color as its light, radial gradient fill (more transparent outward), no border line, no title text, not selectable, not draggable
   * help button
     * position: top right corner
-  * import button (= Ctrl + o)
-    * position: top left corner
   * search bar
     * position: top center
 
@@ -71,8 +68,6 @@ what data we store, how we strore them
   * `click`: open help dialog (with instructions)
 * help dialog
   * `click outside dialog` or `esc`: close help dialog
-* import button
-  * `click`: open file dialog to load a folder containing `world.json`, `workspace.json`, load the data and render the canvas accordingly 
 * search bar
   * `type`: filter the list of existing lights and materials by title, show the filtered list in a dropdown below the search bar
   * `click on a list item`: add the selected item to the canvas at the center of the current view if not already in canvas (add to "attention"), if already in canvas, highlight it with a temporary selection ring

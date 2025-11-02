@@ -1,5 +1,4 @@
 {
-  "dataPath": "test-workspace/world.json",
   "lights": [
     {
       "id": "light1abc123def456",
