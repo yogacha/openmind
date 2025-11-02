@@ -168,13 +168,16 @@ class World {
     removeAttachment(lightId, materialId, attachedId) { // unlink material from shadow (projection), 
         this.projections.deleteTriplet(lightId, materialId, attachedId);
     }
-    /** @type {(query: string) => Item[]} return items that contains query in title (case-insensitive) */
-    searchTitle(query) {
+    /** @type {(query: string, skipset: Set<id>) => Item[]} items that contains query in title (case-insensitive) */
+    searchTitle(query, skipset) {
         if (query.length === 0) { return []; }
         const lowerQuery = query.toLowerCase();
         return Array.from(this.items.values()).filter(item => 
-            item.title.toLowerCase().includes(lowerQuery)
+            !skipset.has(item.id) && item.title.toLowerCase().includes(lowerQuery)
         );
+        // return Array.from(this.items.values()).filter(item => 
+        //     item.title.toLowerCase().includes(lowerQuery)
+        // );
     }
 }
 

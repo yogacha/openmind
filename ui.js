@@ -269,7 +269,7 @@ export class CanvasEditor {
      */
     handleGlobalClick(event) {
         const target = event.target;
-        
+
         console.info('Global click target:', target.className, target.tagName);
 
         // Route to specific handlers based on element attributes/classes
@@ -355,16 +355,12 @@ export class CanvasEditor {
      */
     handleSearchInput(event) {
         const query = event.target.value.trim();
-        this.state.ui.searchResults = this.world.searchTitle(query);
+        this.state.ui.searchResults = this.world.searchTitle(query, this.workspace.items);
         this.showSearchDropdown();
     }
 
     handleSearchFocus(event) {
-        const query = event.target.value.trim();
-        if (query.length > 0 && this.state.ui.searchResults.length > 0) {
-            this.showSearchDropdown();
-            console.log('focus: ' + query + ' ' + this.state.ui.searchResults.length);
-        }
+        this.handleSearchInput(event);
     }
 
     handleSearchBlur(event) {
@@ -376,8 +372,13 @@ export class CanvasEditor {
 
     handleSearchItemClick(id) {
         const item = this.world.get(id);
-        this.workspace.add(item, this.world);
-        this.workspace.setStyle(id, this.state.camera.centerX, this.state.camera.centerY);
+
+        if (this.workspace.hasNode(id)) {
+            this.workspace.add(item, this.world);
+        } else {
+            this.workspace.add(item, this.world);
+            this.workspace.setStyle(id, this.state.camera.centerX, this.state.camera.centerY);
+        }
         this.state.interaction.selectedId = id;
         this.render();
     }
@@ -452,6 +453,18 @@ export class CanvasEditor {
      * COMMON PRACTICE 5: Centralized Keyboard Shortcut Mapping
      */
     handleKeyDown(event) {
+        // Don't handle shortcuts when typing in input fields
+        const activeElement = document.activeElement;
+        const isInputActive = activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.contentEditable === 'true'
+        );
+
+        if (isInputActive) {
+            return; // Let the input field handle the key event
+        }
+
         // Check for modifier keys and create shortcut string
         const shortcut = this.getShortcutString(event);
 
