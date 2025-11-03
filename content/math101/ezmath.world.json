@@ -1,0 +1,269 @@
+{
+  "items": [
+    {
+      "id": "2s2yzxzrm8qlv5jre5o2p",
+      "type": "light",
+      "title": "無限infinite",
+      "body": ""
+    },
+    {
+      "id": "dr0msdxwzvwd49hom5ny2",
+      "type": "material",
+      "title": "數",
+      "body": ""
+    },
+    {
+      "id": "rd51tg7erxtfbkzro9molf",
+      "type": "material",
+      "title": "量 & 單位",
+      "body": "長度: 公尺\n時間: 分鐘\n面積: 坪\n容量: 公升\n\n試著[@抽象化]看看這些東西共同的主題"
+    },
+    {
+      "id": "ho8pxj6qrigpvipy3rxll9",
+      "type": "light",
+      "title": "維度擴展",
+      "body": ""
+    },
+    {
+      "id": "uz20gsea10mak8is6m541d",
+      "type": "material",
+      "title": "數(面積)",
+      "body": ""
+    },
+    {
+      "id": "vvui010mues379ipuku5hd",
+      "type": "light",
+      "title": "抽象化",
+      "body": ""
+    },
+    {
+      "id": "clw8xnpkq28e126xk3lfhi",
+      "type": "light",
+      "title": "具體化",
+      "body": "提出特例:\n\n\n(未來應該一對多?這樣才能看出OO,XX,...都是YY的特例\n視覺語言: right click endpoint -> copy)"
+    },
+    {
+      "id": "x57l7cn9uubvypck2t4s",
+      "type": "material",
+      "title": "體積",
+      "body": ""
+    },
+    {
+      "id": "419rnmpa7xsjvcv23kf0bp",
+      "type": "light",
+      "title": "提出問題",
+      "body": ""
+    },
+    {
+      "id": "edaermcw51ppmlbc63piy",
+      "type": "material",
+      "title": "刻度不夠怎麼辦?",
+      "body": "拿尺量東西，長度不剛好"
+    },
+    {
+      "id": "n7i5qr966dq83vxoiec3m",
+      "type": "light",
+      "title": "視覺化",
+      "body": ""
+    },
+    {
+      "id": "62pv6bt23lgsmvvc4etvgm",
+      "type": "material",
+      "title": "數軸(尺)",
+      "body": ""
+    },
+    {
+      "id": "qy82z6elz3iuy6512ueug9",
+      "type": "material",
+      "title": "網格",
+      "body": ""
+    },
+    {
+      "id": "501lrzlxsq28yhb07a6ydi",
+      "type": "light",
+      "title": "連續",
+      "body": ""
+    },
+    {
+      "id": "lslsulmnzoat8ysndb5dt",
+      "type": "material",
+      "title": "分數",
+      "body": ""
+    },
+    {
+      "id": "zc3712jkjpmun4cztxymns",
+      "type": "material",
+      "title": "加法",
+      "body": ""
+    },
+    {
+      "id": "8lv66qofis9j6hfn9hlyy",
+      "type": "material",
+      "title": "減法",
+      "body": ""
+    },
+    {
+      "id": "m1ywzbiaqsd9397ie3c79i",
+      "type": "light",
+      "title": "dual",
+      "body": ""
+    },
+    {
+      "id": "grd95png0omk4jqhchgt7",
+      "type": "material",
+      "title": "因數",
+      "body": "[@面積->@因數]\n考慮整"
+    },
+    {
+      "id": "e8g0g5n36nrj2lb2a5bf7m",
+      "type": "light",
+      "title": "觀察",
+      "body": ""
+    },
+    {
+      "id": "cnw0ku1xpgw8kfzncfdayg",
+      "type": "light",
+      "title": "特例",
+      "body": ""
+    },
+    {
+      "id": "hcm7rhiyubrqwm3hto682b",
+      "type": "material",
+      "title": "最大公因數",
+      "body": ""
+    },
+    {
+      "id": "n4mf2w6mej9blz23bl4c2o",
+      "type": "material",
+      "title": "輾轉相除",
+      "body": ""
+    },
+    {
+      "id": "4nlho0dw6pg6bd5fayej8",
+      "type": "light",
+      "title": "如何計算",
+      "body": ""
+    },
+    {
+      "id": "xhjbh3cconsg1odpjck09a",
+      "type": "material",
+      "title": "乘法",
+      "body": ""
+    },
+    {
+      "id": "yfvs56861od526ysyjm9h",
+      "type": "material",
+      "title": "除法",
+      "body": ""
+    },
+    {
+      "id": "fj4dy7v4szdd7fad8tu83p",
+      "type": "material",
+      "title": "長 & 寬",
+      "body": ""
+    },
+    {
+      "id": "0dxfc2ja9o0ax7jkmfjkp3",
+      "type": "material",
+      "title": "困難紀錄",
+      "body": "有些node很難命名，不是一個可以被命名的概念 而是被組合的，或許應該保留他的匿名性(不能被搜尋)，作為純粹內容，待被發現的node"
+    }
+  ],
+  "projections": [
+    {
+      "startId": "ho8pxj6qrigpvipy3rxll9",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "uz20gsea10mak8is6m541d"
+    },
+    {
+      "startId": "ho8pxj6qrigpvipy3rxll9",
+      "midId": "uz20gsea10mak8is6m541d",
+      "endId": "x57l7cn9uubvypck2t4s"
+    },
+    {
+      "startId": "ho8pxj6qrigpvipy3rxll9",
+      "midId": "62pv6bt23lgsmvvc4etvgm",
+      "endId": "qy82z6elz3iuy6512ueug9"
+    },
+    {
+      "startId": "vvui010mues379ipuku5hd",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "dr0msdxwzvwd49hom5ny2"
+    },
+    {
+      "startId": "clw8xnpkq28e126xk3lfhi",
+      "midId": "dr0msdxwzvwd49hom5ny2",
+      "endId": "rd51tg7erxtfbkzro9molf"
+    },
+    {
+      "startId": "clw8xnpkq28e126xk3lfhi",
+      "midId": "clw8xnpkq28e126xk3lfhi",
+      "endId": null
+    },
+    {
+      "startId": "419rnmpa7xsjvcv23kf0bp",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "edaermcw51ppmlbc63piy"
+    },
+    {
+      "startId": "n7i5qr966dq83vxoiec3m",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "62pv6bt23lgsmvvc4etvgm"
+    },
+    {
+      "startId": "n7i5qr966dq83vxoiec3m",
+      "midId": "uz20gsea10mak8is6m541d",
+      "endId": "qy82z6elz3iuy6512ueug9"
+    },
+    {
+      "startId": "n7i5qr966dq83vxoiec3m",
+      "midId": "edaermcw51ppmlbc63piy",
+      "endId": null
+    },
+    {
+      "startId": "n7i5qr966dq83vxoiec3m",
+      "midId": "grd95png0omk4jqhchgt7",
+      "endId": "fj4dy7v4szdd7fad8tu83p"
+    },
+    {
+      "startId": "n7i5qr966dq83vxoiec3m",
+      "midId": "n4mf2w6mej9blz23bl4c2o",
+      "endId": null
+    },
+    {
+      "startId": "m1ywzbiaqsd9397ie3c79i",
+      "midId": "zc3712jkjpmun4cztxymns",
+      "endId": "8lv66qofis9j6hfn9hlyy"
+    },
+    {
+      "startId": "m1ywzbiaqsd9397ie3c79i",
+      "midId": "xhjbh3cconsg1odpjck09a",
+      "endId": "yfvs56861od526ysyjm9h"
+    },
+    {
+      "startId": "e8g0g5n36nrj2lb2a5bf7m",
+      "midId": "qy82z6elz3iuy6512ueug9",
+      "endId": "fj4dy7v4szdd7fad8tu83p"
+    },
+    {
+      "startId": "cnw0ku1xpgw8kfzncfdayg",
+      "midId": "grd95png0omk4jqhchgt7",
+      "endId": "hcm7rhiyubrqwm3hto682b"
+    },
+    {
+      "startId": "4nlho0dw6pg6bd5fayej8",
+      "midId": "rd51tg7erxtfbkzro9molf",
+      "endId": "zc3712jkjpmun4cztxymns"
+    },
+    {
+      "startId": "4nlho0dw6pg6bd5fayej8",
+      "midId": "uz20gsea10mak8is6m541d",
+      "endId": "xhjbh3cconsg1odpjck09a"
+    },
+    {
+      "startId": "4nlho0dw6pg6bd5fayej8",
+      "midId": "hcm7rhiyubrqwm3hto682b",
+      "endId": "n4mf2w6mej9blz23bl4c2o"
+    }
+  ]
+}
