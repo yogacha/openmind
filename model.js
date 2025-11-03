@@ -22,7 +22,7 @@ class Item {
      * @param {string} [title='Untitled'] - The title of the model (defaults to 'Untitled').
      * @param {string} [body=''] - The body/content of the model (defaults to an empty string).
      */
-    constructor(id, type, title = 'Untitled', body = '') {
+    constructor(id, type, title = '', body = '') {
         this.id = id;
         this.type = type;
         this.title = title;
