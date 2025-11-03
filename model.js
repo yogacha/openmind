@@ -199,10 +199,10 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         return {
             lights: Array.from(this.lights.entries()).map(([id, status]) => ({ id, status })),
             items: Array.from(this.items),
-            // nodes: 
+            styles: Array.from(this._nodes.entries()).map(([id, style]) => ({ id, ...style })),
         };
     }
-    /** @type {(obj: {lights: {id: id, status: 'On'|'Off'}[], items: id[]}) => Workspace} */
+    /** @type {(obj: {lights: {id: id, status: 'On'|'Off'}[], items: id[], styles: {id: id, x: number, y: number, color: string}[]}) => Workspace} */
     static fromObject(obj) {
         const ws = new Workspace();
         for (const it of obj.lights) {
@@ -211,7 +211,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         for (const id of obj.items) {
             ws.items.add(id);
         }
-        // TODO: nodes: 
+        for (const {id, x, y, color} of (obj.styles ?? [])) {
+            ws._nodes.set(id, {x, y, color});
+        }
         return ws;
     }
     /** @type {(world: World) => void} */
@@ -377,11 +379,20 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             if (this._nodes.has(id)) {
                 continue;
             }
-            this._nodes.set(id, {
-                x: Math.random() * 800 - 400,
-                y: Math.random() * 600 - 300,
-                color: this.colour(id)
-            });
+            if (this.lights.has(id)) { // randomize at outer margin
+
+                this._nodes.set(id, {
+                    x: utils.randUniform(400, 500) * (Math.random() > 0.5 ? 1 : -1),
+                    y: utils.randUniform(-400, 400),
+                    color: this.colour(id)
+                });
+            } else { // randomize at center area
+                this._nodes.set(id, {
+                    x: utils.randUniform(-400, 400),
+                    y: utils.randUniform(-400, 400),
+                    color: this.colour(id)
+                });
+            }
         }
         // now, _nodes contains all items in this.items
 

@@ -28,6 +28,10 @@ export function randId() { // generate random ID
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+export function randUniform(low, high) {
+    return Math.random() * (high - low) + low
+}
+
 export function downloadJSONFile(filename, content) {
     const blob = new Blob([content], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -62,6 +66,7 @@ export function escapeHtml(text) {
 export default {
     Vec,
     randId,
+    randUniform,
     downloadJSONFile,
     randomColor,
     escapeHtml,

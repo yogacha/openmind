@@ -313,7 +313,7 @@ export class App extends CanvasEditor {
         const worldText = JSON.stringify(this.world.toObject(), null, 2);
 
         // Determine filenames
-        const worldInput = document.getElementById('workspace-world');
+        const worldInput = document.getElementById('world-input');
         const workspaceInput = document.getElementById('workspace-input');
         const worldFilename = worldInput.files.length > 0 ? worldInput.files[0].name : 'haha.world.json';
         const workspaceFilename = workspaceInput.files.length > 0 ? workspaceInput.files[0].name : 'haha.workspace.json';
