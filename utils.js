@@ -38,6 +38,15 @@ export function downloadJSONFile(filename, content) {
     URL.revokeObjectURL(url);
 }
 
+export function randomColor(brightnessLow = 128) {
+    // Generate brighter colors by ensuring minimum brightness
+    const c = 256 - brightnessLow;
+    const r = Math.floor(Math.random() * c + brightnessLow); // [brightnessLow, 256)
+    const g = Math.floor(Math.random() * c + brightnessLow); // [brightnessLow, 256)
+    const b = Math.floor(Math.random() * c + brightnessLow); // [brightnessLow, 256)
+    return '#' + r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + b.toString(16).padStart(2, '0');
+}
+
 /**
  * Escape HTML to prevent XSS
  * @param {string} text - Text to escape
@@ -49,9 +58,11 @@ export function escapeHtml(text) {
     return div.innerHTML;
 }
 
+
 export default {
     Vec,
     randId,
     downloadJSONFile,
+    randomColor,
     escapeHtml,
 };

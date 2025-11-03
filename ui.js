@@ -605,8 +605,7 @@ export class CanvasEditor {
     }
 
     changeItemColor() {
-        // random color for demo
-        const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        const color = utils.randomColor();
         this.workspace.setStyle(this.state.interaction.selectedId, null, null, color);
         this.render();
     }
@@ -879,7 +878,7 @@ export class CanvasEditor {
         this.ctx.font = `${14 / this.state.camera.zoom}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(info.title, info.x, info.y);
+        this.ctx.fillText(info.title, info.x, info.y - (7 + radius) * 1.2);
 
         // Draw selection ring if selected
         if (this.state.interaction.selectedId === info.id) {
