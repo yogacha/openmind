@@ -1,7 +1,27 @@
 {
   "lights": [
     {
-      "id": "2s2yzxzrm8qlv5jre5o2p",
+      "id": "vvui010mues379ipuku5hd",
+      "status": "Off"
+    },
+    {
+      "id": "clw8xnpkq28e126xk3lfhi",
+      "status": "Off"
+    },
+    {
+      "id": "419rnmpa7xsjvcv23kf0bp",
+      "status": "Off"
+    },
+    {
+      "id": "n7i5qr966dq83vxoiec3m",
+      "status": "On"
+    },
+    {
+      "id": "m1ywzbiaqsd9397ie3c79i",
+      "status": "Off"
+    },
+    {
+      "id": "e8g0g5n36nrj2lb2a5bf7m",
       "status": "Off"
     },
     {
@@ -9,26 +29,31 @@
       "status": "Off"
     },
     {
-      "id": "vvui010mues379ipuku5hd",
+      "id": "cnw0ku1xpgw8kfzncfdayg",
       "status": "On"
     },
     {
-      "id": "clw8xnpkq28e126xk3lfhi",
-      "status": "On"
-    },
-    {
-      "id": "419rnmpa7xsjvcv23kf0bp",
+      "id": "4nlho0dw6pg6bd5fayej8",
       "status": "On"
     }
   ],
   "items": [
-    "2s2yzxzrm8qlv5jre5o2p",
-    "dr0msdxwzvwd49hom5ny2",
-    "rd51tg7erxtfbkzro9molf",
-    "ho8pxj6qrigpvipy3rxll9",
     "vvui010mues379ipuku5hd",
     "clw8xnpkq28e126xk3lfhi",
     "419rnmpa7xsjvcv23kf0bp",
-    "edaermcw51ppmlbc63piy"
+    "n7i5qr966dq83vxoiec3m",
+    "dr0msdxwzvwd49hom5ny2",
+    "m1ywzbiaqsd9397ie3c79i",
+    "grd95png0omk4jqhchgt7",
+    "e8g0g5n36nrj2lb2a5bf7m",
+    "ho8pxj6qrigpvipy3rxll9",
+    "uz20gsea10mak8is6m541d",
+    "cnw0ku1xpgw8kfzncfdayg",
+    "hcm7rhiyubrqwm3hto682b",
+    "4nlho0dw6pg6bd5fayej8",
+    "qy82z6elz3iuy6512ueug9",
+    "fj4dy7v4szdd7fad8tu83p",
+    "n4mf2w6mej9blz23bl4c2o",
+    "0dxfc2ja9o0ax7jkmfjkp3"
   ]
 }
