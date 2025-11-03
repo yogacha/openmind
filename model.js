@@ -229,7 +229,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     /** @type {(id: id) => color} */
     colour(id) { // default colour for light/material/visibleOnly nodes
         if (this.items.has(id)) {
-            return this.lights.has(id) ? '#ffff00' : '#ffffff';
+            return this.lights.has(id) ? utils.randomColor() : '#ffffff';
         }
         return '#ffffff';
     }
