@@ -97,5 +97,5 @@ export default {
     downloadJSONFile,
     randomColor,
     escapeHtml,
-    SuperGifPlayer: createSuperGifPlayer
+    createSuperGifPlayer
 };

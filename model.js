@@ -2,7 +2,7 @@
 /**
  * @typedef {string} id
  * @typedef {'material' | 'light'} ItemType
- * @typedef {{id: id, type: ItemType, title: string, body: string}} ItemData
+ * @typedef {{id: id, type: ItemType, title: string, body: string, icon?: string}} ItemData
  * @typedef {{startId: id, midId: id, endId: id | null}} ProjectionData
  * @typedef {string} color string in hex format of length 6
  * @typedef {{x: number, y: number}} coord
@@ -22,18 +22,20 @@ class Item {
      * @param {string} [title='Untitled'] - The title of the model (defaults to 'Untitled').
      * @param {string} [body=''] - The body/content of the model (defaults to an empty string).
      */
-    constructor(id, type, title = '', body = '') {
+    constructor(id, type, title = '', body = '', icon = '') {
         this.id = id;
         this.type = type;
         this.title = title;
         this.body = body;
+        /** @type {string} base64 */
+        this.icon = icon;
     }
     toObject() {
         return { ...this };
     }
     /** @type {(obj: ItemData) => Item} */
     static fromObject(obj) {
-        return new Item(obj.id, obj.type, obj.title, obj.body);
+        return new Item(obj.id, obj.type, obj.title, obj.body, obj.icon ?? '');
     }
 }
 /** @extends {Map<id, Map<id, id | null>>} startId => midId => endId, i.e. light => item => item | null) */
@@ -194,6 +196,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this._nodes = new Map();
         /** @type {Map<id, {x: number, y: number, isNull: boolean}>} drag points for attachment endpoints */
         this._endpoints = new Map();
+        this._players = new Map();
     }
     toObject() {
         return {
@@ -219,12 +222,10 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     /** @type {(world: World) => void} */
     initializeNodes(world) { // random position
         // Remove items not in world
-        const itemsToDelete = [];
-        for (const id of this.items) {
-            if (!world.has(id)) itemsToDelete.push(id);
-        }
+        const itemsToDelete = Array.from(this.items).filter(id => !world.has(id));
         for (const id of itemsToDelete) {
             this.delete(id, world);
+            console.warn(`Item ${id} in workspace but not in world - removing from workspace`);
         }
         this._updateNodes(world);
     }
@@ -295,7 +296,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             });
         }
     }
-    /** @type {(world: World) => Iterable<{id: id, type: ItemType, title: string, x: number, y: number, color: string}>} */
+    /** @type {(world: World) => Iterable<{id: id, type: ItemType, title: string, x: number, y: number, color: string, player: any | null}>} */
     *nodes(world) {
         // this._updateNodes(world); // unneeded since we update on every add/delete/hide
         for (const [id, info] of this._nodes.entries()) {
@@ -311,6 +312,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 x: info.x,
                 y: info.y,
                 color: info.color.slice(0, 7) + (this.items.has(id) ? 'ff' : '88'),
+                player: this._players.get(id) ?? null,
             };
         }
     }
@@ -376,22 +378,32 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     _updateNodes(world) {
         // set default color and random position for missing items ONLY
         for (const id of this.items) {
-            if (this._nodes.has(id)) {
+            const item = world.get(id);
+            if (!item) {
                 continue;
             }
-            if (this.lights.has(id)) { // randomize at outer margin
-
-                this._nodes.set(id, {
-                    x: utils.randUniform(400, 500) * (Math.random() > 0.5 ? 1 : -1),
-                    y: utils.randUniform(-400, 400),
-                    color: this.colour(id)
-                });
-            } else { // randomize at center area
-                this._nodes.set(id, {
-                    x: utils.randUniform(-400, 400),
-                    y: utils.randUniform(-400, 400),
-                    color: this.colour(id)
-                });
+            
+            // Create node if it doesn't exist
+            if (!this._nodes.has(id)) {
+                if (this.lights.has(id)) { // randomize at outer margin
+                    this._nodes.set(id, {
+                        x: utils.randUniform(400, 500) * (Math.random() > 0.5 ? 1 : -1),
+                        y: utils.randUniform(-400, 400),
+                        color: this.colour(id)
+                    });
+                } else { // randomize at center area
+                    console.info('Adding node for item', item.title);
+                    this._nodes.set(id, {
+                        x: utils.randUniform(-400, 400),
+                        y: utils.randUniform(-400, 400),
+                        color: this.colour(id)
+                    });
+                }
+            }
+            
+            // Create player if item has icon and player doesn't exist
+            if (item.icon && !this._players.has(id) ) {
+                this._players.set(id, utils.createSuperGifPlayer(item.icon) );
             }
         }
         // now, _nodes contains all items in this.items
@@ -415,11 +427,16 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         // add unsetted visibleOnly nodes
         for (const [id, pos] of visibleOnly.entries()) {
             // Only add visible-only nodes that actually exist in the world
-            if (!this._nodes.has(id) && id !== null && world.has(id)) {
+            const item = world.get(id);
+            if (!this._nodes.has(id) && id !== null && item) {
                 this._nodes.set(id, {
                     x: pos.x, y: pos.y,
                     color: this.colour(id)
                 });
+                // Create player for visible-only item if it has an icon
+                if (item.icon && !this._players.has(id)) {
+                    this._players.set(id, utils.createSuperGifPlayer(item.icon));
+                }
             }
         }
     }
