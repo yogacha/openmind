@@ -1,0 +1,144 @@
+{
+  "items": [
+    {
+      "id": "h3yvj5gehz96rysi29kc0x",
+      "type": "material",
+      "title": "item",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "t79e16e2ihe835xp632lte",
+      "type": "light",
+      "title": "Light",
+      "body": "A “LIGHT” could be a way of thinking —\nan idea that projects what’s in your mind\nand expands it outward.\n\nPress L to toggle it on or off.\nTry dragging the endpoint to link or unlink.",
+      "icon": ""
+    },
+    {
+      "id": "qq2jr3geodnm8lo7nxwc5",
+      "type": "material",
+      "title": "derived idea",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "s04pdu6ued9ygs9lrqhbj",
+      "type": "light",
+      "title": "why?",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "2m0vdcz1g4ey9nwxvuwxm",
+      "type": "material",
+      "title": "explorable explanation",
+      "body": "Active readers do not just listen and absorb knowledge, they ask questions.\n\n\nexplorable explanation is good for showing a system --- knowledge is a system of data.",
+      "icon": ""
+    },
+    {
+      "id": "zdi9fyd6y2rew1lb53u85a",
+      "type": "material",
+      "title": "Software foundation",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "opuhd43zhvmc1575rqzxv",
+      "type": "material",
+      "title": "non-linear story telling",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "t339svurmsi43bjsb4ncr",
+      "type": "material",
+      "title": "thinking lego",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "pg1yreeh4okpz64uelnx",
+      "type": "light",
+      "title": "inspiration",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "7b40cuygzxfatrqqbkdbr",
+      "type": "material",
+      "title": "POE tech tree",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "hoicoq6cjhr28dm04qlojk",
+      "type": "material",
+      "title": "editable textbook",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "1zcjvu91yrvunt3rtu0sv",
+      "type": "material",
+      "title": "Bret Victor",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "6cnl9go8kiq2qb50lnzeye",
+      "type": "material",
+      "title": "sketch your mind",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "xoxmhkbx1ejg29i8cl905o",
+      "type": "light",
+      "title": "abstraction",
+      "body": "",
+      "icon": ""
+    }
+  ],
+  "projections": [
+    {
+      "startId": "t79e16e2ihe835xp632lte",
+      "midId": "h3yvj5gehz96rysi29kc0x",
+      "endId": "qq2jr3geodnm8lo7nxwc5"
+    },
+    {
+      "startId": "s04pdu6ued9ygs9lrqhbj",
+      "midId": "t79e16e2ihe835xp632lte",
+      "endId": "t339svurmsi43bjsb4ncr"
+    },
+    {
+      "startId": "s04pdu6ued9ygs9lrqhbj",
+      "midId": "h3yvj5gehz96rysi29kc0x",
+      "endId": "opuhd43zhvmc1575rqzxv"
+    },
+    {
+      "startId": "pg1yreeh4okpz64uelnx",
+      "midId": "opuhd43zhvmc1575rqzxv",
+      "endId": "7b40cuygzxfatrqqbkdbr"
+    },
+    {
+      "startId": "pg1yreeh4okpz64uelnx",
+      "midId": "hoicoq6cjhr28dm04qlojk",
+      "endId": "zdi9fyd6y2rew1lb53u85a"
+    },
+    {
+      "startId": "pg1yreeh4okpz64uelnx",
+      "midId": "2m0vdcz1g4ey9nwxvuwxm",
+      "endId": "1zcjvu91yrvunt3rtu0sv"
+    },
+    {
+      "startId": "pg1yreeh4okpz64uelnx",
+      "midId": "t339svurmsi43bjsb4ncr",
+      "endId": "6cnl9go8kiq2qb50lnzeye"
+    },
+    {
+      "startId": "xoxmhkbx1ejg29i8cl905o",
+      "midId": "t339svurmsi43bjsb4ncr",
+      "endId": "2m0vdcz1g4ey9nwxvuwxm"
+    }
+  ]
+}
