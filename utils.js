@@ -62,6 +62,33 @@ export function escapeHtml(text) {
     return div.innerHTML;
 }
 
+export function createSuperGifPlayer(src) {
+    // Initialize SuperGif player
+
+    const gif = document.createElement('img');
+    gif.className = 'hidden';
+    gif.src = src;
+    document.body.appendChild(gif);
+
+
+    const player = new SuperGif({
+        gif: gif,
+        auto_play: false
+    });
+
+    player.load(() => {
+        // Hide SuperGif's canvas if it creates one
+        const superGifCanvas = player.get_canvas();
+        if (superGifCanvas && superGifCanvas.parentNode) {
+            superGifCanvas.style.display = 'none';
+        }
+
+        // Start playing and set up render loop
+        player.play();
+    });
+    return player;
+}
+
 
 export default {
     Vec,
@@ -70,4 +97,5 @@ export default {
     downloadJSONFile,
     randomColor,
     escapeHtml,
+    SuperGifPlayer: createSuperGifPlayer
 };

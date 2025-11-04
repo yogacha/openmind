@@ -39,8 +39,6 @@ export class App extends CanvasEditor {
         this.state.interaction.mouseDown = true;
         this.state.interaction.dragStart = { ...this.state.interaction.mouse };
         this.state.interaction.lastCamera = { ...this.state.camera };
-
-        this.render();
     }
 
     handleCanvasMouseMove(event) {
@@ -52,7 +50,6 @@ export class App extends CanvasEditor {
             case 'link':
                 // Update cursor for endpoint dragging
                 this.canvas.style.cursor = 'crosshair';
-                this.render();
                 break;
             case 'pan':
                 // Update cursor
@@ -68,14 +65,12 @@ export class App extends CanvasEditor {
                     this.state.interaction.lastCamera.centerY - delta.y,
                     null
                 );
-                this.render();
                 break;
             case 'select': // dragging a node/item
                 // Update cursor
                 this.canvas.style.cursor = 'move';
 
                 this.workspace.setStyle(this.state.interaction.selectedId, coord.x, coord.y);
-                this.render();
                 break;
         }
     }
@@ -113,7 +108,6 @@ export class App extends CanvasEditor {
         this.canvas.style.cursor = 'grab';
 
         // Re-render to show endpoint back in original position
-        this.render();
     }
 
     handleCanvasDoubleClick(event) {
@@ -148,7 +142,6 @@ export class App extends CanvasEditor {
                 break;
         }
         this.state.interaction.mouseDown = false;
-        this.render();
     }
 
 
@@ -164,7 +157,6 @@ export class App extends CanvasEditor {
         this.workspace.setStyle(item.id, coord.x, coord.y);
 
         console.log(`addItem(${item.type}, ${coord.x}, ${coord.y})`);
-        this.render();
     }
     deleteSelectedItem() {
         if (!this.state.interaction.selectedId) {
@@ -186,20 +178,15 @@ export class App extends CanvasEditor {
         // Clear selection
         this.state.interaction.selectedId = null;
 
-        // Re-render to show changes
-        this.render();
-
         console.log('Deleted item:', itemId, 'Type:', item.type);
     }
     deleteProjection() {
         const [startId, midId] = this.state.interaction.selectedEndpoint.split('-');
         this.world.removeProjection(startId, midId);
         this.state.interaction.selectedEndpoint = null;
-        this.render();
     }
     hideSelectedItem() {
         this.workspace.hide(this.state.interaction.selectedId, this.world);
-        this.render();
     }
     editSelectedItem() {
         if (!this.state.interaction.selectedId) return;
@@ -212,9 +199,6 @@ export class App extends CanvasEditor {
 
         // Add item to workspace when editing (if not already there)
         this.workspace.add(selectedItem, this.world);
-
-        // Re-render to show any newly added nodes
-        this.render();
 
         console.log('Item added to workspace:', selectedItem.id);
 
@@ -237,7 +221,6 @@ export class App extends CanvasEditor {
         const newStatus = (currentStatus === 'On') ? 'Off' : 'On';
 
         this.workspace.setLight(this.state.interaction.selectedId, newStatus, this.world);
-        this.render();
     }
 
     // ============================================================================
@@ -298,7 +281,6 @@ export class App extends CanvasEditor {
 
         this.workspace.initializeNodes(this.world);
         this.resetCamera();
-        this.render();
 
         // Complete the sequential file opening process
         if (this.state.ui.openingFiles && this.state.ui.openingStep === 'workspace') {

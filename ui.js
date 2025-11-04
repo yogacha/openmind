@@ -176,7 +176,6 @@ export class CanvasEditor {
         this.state.camera.centerY = centerY ?? this.state.camera.centerY;
         this.state.camera.zoom = zoom ?? this.state.camera.zoom;
         // console.log('setCamera', centerX, centerY, zoom);
-        // this.render();
     }
     resetCamera(margin = 100) {
         const rect = this.workspace.getBoundingRect();
@@ -232,7 +231,6 @@ export class CanvasEditor {
         const newZoom = Math.max(0.1, Math.min(5, this.state.camera.zoom * zoomFactor));
 
         this.setCamera(null, null, newZoom);
-        this.render();
     }
 
     handleCanvasContextMenu(event) {
@@ -245,8 +243,6 @@ export class CanvasEditor {
             // Show canvas context menu
             this.showCanvasContextMenu();
         }
-
-        this.render();
     }
 
     handleCanvasDoubleClick(event) { }
@@ -380,7 +376,6 @@ export class CanvasEditor {
             this.workspace.setStyle(id, this.state.camera.centerX, this.state.camera.centerY);
         }
         this.state.interaction.selectedId = id;
-        this.render();
     }
 
     showSearchDropdown() {
@@ -511,7 +506,6 @@ export class CanvasEditor {
                 break;
             case 'r':
                 this.resetCamera();
-                this.render();
                 break;
         }
     }
@@ -547,7 +541,6 @@ export class CanvasEditor {
      */
     handleWindowResize(event) {
         this.resizeCanvas();
-        this.render();
     }
 
     // ============================================================================
@@ -578,9 +571,6 @@ export class CanvasEditor {
         item.title = titleInput.value.trim() || 'Untitled';
         item.body = bodyInput.value;
 
-        // Re-render to show updated title
-        this.render();
-
         // Hide panel
         this.hideEditorPanel();
 
@@ -601,13 +591,11 @@ export class CanvasEditor {
         }
 
         this.hideInlineTitleEditor();
-        this.render();
     }
 
     changeItemColor() {
         const color = utils.randomColor();
         this.workspace.setStyle(this.state.interaction.selectedId, null, null, color);
-        this.render();
     }
 
     startLinkingItem() {
@@ -632,7 +620,6 @@ export class CanvasEditor {
         // Clear selection
         this.state.interaction.selectedId = null;
         this.state.interaction.selectedEndpoint = null;
-        this.render();
     }
 
     closeAllPopups() {
@@ -724,7 +711,6 @@ export class CanvasEditor {
             input.focus();
             input.select(); // Select all text for easy editing
         }, 10);
-        // this.render();
     }
 
     hideHelpModal() {
@@ -762,7 +748,6 @@ export class CanvasEditor {
         }
 
         this.hideInlineTitleEditor();
-        this.render();
     }
 
 
@@ -789,6 +774,9 @@ export class CanvasEditor {
         // Restore context
         this.ctx.restore();
 
+        requestAnimationFrame(() => {
+            this.render();
+        });
     }
 
 
@@ -862,9 +850,13 @@ export class CanvasEditor {
 
     drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
-        this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
-        this.ctx.fillStyle = info.color;
-        this.ctx.fill();
+        if (info.player && info.player.getcanvas()) {
+            this.ctx.drawImage(info.player.getcanvas(), info.x - radius, info.y - radius, radius * 2, radius * 2);
+        } else {
+            this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
+            this.ctx.fillStyle = info.color;
+            this.ctx.fill();
+        }
 
         if (info.type === 'material') {
             // Material: white fill with border
