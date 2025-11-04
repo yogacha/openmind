@@ -97,6 +97,20 @@
       "title": "abstraction",
       "body": "",
       "icon": ""
+    },
+    {
+      "id": "v5rsg791u8sjc8j3mp2x",
+      "type": "material",
+      "title": "analogy as core cognitive of mind",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "wqyfdzmweurn7fttpyula",
+      "type": "material",
+      "title": "visual first & dual channel",
+      "body": "",
+      "icon": ""
     }
   ],
   "projections": [
@@ -108,12 +122,17 @@
     {
       "startId": "s04pdu6ued9ygs9lrqhbj",
       "midId": "t79e16e2ihe835xp632lte",
-      "endId": "t339svurmsi43bjsb4ncr"
+      "endId": "2m0vdcz1g4ey9nwxvuwxm"
     },
     {
       "startId": "s04pdu6ued9ygs9lrqhbj",
       "midId": "h3yvj5gehz96rysi29kc0x",
       "endId": "opuhd43zhvmc1575rqzxv"
+    },
+    {
+      "startId": "s04pdu6ued9ygs9lrqhbj",
+      "midId": "qq2jr3geodnm8lo7nxwc5",
+      "endId": "v5rsg791u8sjc8j3mp2x"
     },
     {
       "startId": "pg1yreeh4okpz64uelnx",
