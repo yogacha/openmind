@@ -530,8 +530,14 @@ export class CanvasEditor {
         this.state.ui.openingFiles = true;
         this.state.ui.openingStep = 'world';
 
+        // Reset file inputs to ensure change events fire even for the same file
+        const worldInput = document.getElementById('world-input');
+        const workspaceInput = document.getElementById('workspace-input');
+        worldInput.value = '';
+        workspaceInput.value = '';
+
         // Trigger world file selection
-        document.getElementById('world-input').click();
+        worldInput.click();
     }
     async handleWorldSelect(event) { }
     async handleWorkspaceSelect(event) { }

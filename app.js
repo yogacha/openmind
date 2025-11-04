@@ -226,6 +226,37 @@ export class App extends CanvasEditor {
     // ============================================================================
     // File 
     // ============================================================================
+    async loadDefaultFiles() {
+        try {
+            // Load world file
+            const worldResponse = await fetch('./content/openmind101/hello.world.json');
+            if (!worldResponse.ok) throw new Error('World file not found');
+            
+            const worldContent = await worldResponse.text();
+            this.world = World.fromObject(JSON.parse(worldContent));
+            this.state.name.world = 'hello';
+            console.log('Loaded default world: hello');
+
+            // Load workspace file
+            const workspaceResponse = await fetch('./content/openmind101/hello.workspace.json');
+            if (!workspaceResponse.ok) throw new Error('Workspace file not found');
+            
+            const workspaceContent = await workspaceResponse.text();
+            this.workspace = Workspace.fromObject(JSON.parse(workspaceContent));
+            this.state.name.workspace = 'hello';
+            
+            document.title = 'hello - world';
+            
+            this.workspace.initializeNodes(this.world);
+            this.resetCamera();
+            
+            console.log('Loaded default workspace: hello');
+        } catch (error) {
+            console.error('Error loading default files:', error);
+            throw error;
+        }
+    }
+
     async handleWorldSelect(event) {
         const files = event.target.files;
         const file = files[0];
@@ -344,6 +375,13 @@ function throttle(func, limit) {
 // ============================================================================
 
 // Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.app = new App();
+    
+    // Load default files on startup
+    try {
+        await window.app.loadDefaultFiles();
+    } catch (error) {
+        console.warn('Could not load default files:', error);
+    }
 });
