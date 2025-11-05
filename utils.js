@@ -90,6 +90,20 @@ export function createSuperGifPlayer(src) {
 }
 
 
+/**
+ * Convert a File to base64 string
+ * @param {File} file - File to convert
+ * @returns {Promise<string>} Base64 string representation of the file
+ */
+export function toBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
 export default {
     Vec,
     randId,
@@ -97,5 +111,6 @@ export default {
     downloadJSONFile,
     randomColor,
     escapeHtml,
-    createSuperGifPlayer
+    createSuperGifPlayer,
+    toBase64,
 };
