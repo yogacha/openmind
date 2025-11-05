@@ -870,7 +870,9 @@ export class CanvasEditor {
         this.ctx.setLineDash([8 / this.state.camera.zoom, 6 / this.state.camera.zoom]);
         this.ctx.beginPath();
         this.ctx.moveTo(curve.mid.x, curve.mid.y);
-        if (!curve.end.isNull) {
+
+        const endId = this.world.getAttachment(...curve.index.split("-"));
+        if (endId) {
             this.ctx.quadraticCurveTo(
                 controlPoint.x, controlPoint.y,
                 curve.end.x, curve.end.y

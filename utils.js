@@ -22,6 +22,9 @@ export const Vec = {
     antipode(center, v) {
         return Vec.add(center, Vec.sub(center, v));
     },
+    midpoint(a, b) {
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    },
 }
 
 export function randId() { // generate random ID

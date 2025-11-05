@@ -195,7 +195,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.items = new Set();
         /** @type {Map<id, {x: number, y: number, color: string}>} style info for items in attention */
         this._nodes = new Map();
-        /** @type {Map<id, {x: number, y: number, isNull: boolean}>} drag points for attachment endpoints */
+        /** @type {Map<id, coord>} drag points for attachment endpoints */
         this._endpoints = new Map();
         /** @type {Map<id, HTMLImageElement | SuperGifCanvas>} */
         this._icons = new Map();
@@ -322,15 +322,25 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     *projections(world) {
         for (const [start, status] of this.lights.entries()) {
             if (status !== 'On') { continue }
-            for (const mid of this.items) {
-                const end = world.getAttachment(start, mid);
+            for (const id of this.items) {
+                // yield (start, id. *)
+                const end = world.getAttachment(start, id);
                 if (end !== undefined) {
-                    yield [start, mid, end];
+                    yield [start, id, end];
+                }
+                // yield (start, *, id)
+                const mid2end = world.projections.get(start);
+                if (mid2end) {
+                    for (const [mid, endId] of mid2end.entries()) {
+                        if (endId === id) {
+                            yield [start, mid, id];
+                        }
+                    }
                 }
             }
         }
     }
-    /** @type {(world: World) => Iterable<{index: string, start: coord, mid: coord, end: {x: number, y: number, isNull: boolean}, color: string}>} */
+    /** @type {(world: World) => Iterable<{index: string, start: coord, mid: coord, end: coord, color: string}>} */
     *curves(world) {
         this._updateEndpoints(world);
 
@@ -421,12 +431,19 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         // now, _nodes contains all items in this.items
 
         // gather visibleOnly items, a disjoint set from this.items
-        // const visibleOnly = new Set();
         const visibleOnly = new Map();
-        for (const [start, mid, id] of this.projections(world)) {
-            if (id && !this.items.has(id) && !visibleOnly.has(id)) {
-                visibleOnly.set(id,
+        
+        for (const [start, mid, end] of this.projections(world)) {
+            // visible-only endpoints
+            if (end && !this.items.has(end) && !visibleOnly.has(end)) {
+                visibleOnly.set(end,
                     Vec.antipode(this._nodes.get(mid), this._nodes.get(start))
+                );
+            }
+            // visible-only midpoints
+            if (end && !this.items.has(mid) && !visibleOnly.has(mid)) {
+                visibleOnly.set(mid,
+                    Vec.midpoint(this._nodes.get(start), this._nodes.get(end))
                 );
             }
         }
@@ -480,7 +497,6 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                     midNode, Vec.normalize(direction, 4 * nodeRadius)
                 );
             }
-            endpoint = { x: endpoint.x, y: endpoint.y, isNull: (end === null) };
             this._endpoints.set(`${start}-${mid}`, endpoint);
         }
     }
