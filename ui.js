@@ -871,8 +871,8 @@ export class CanvasEditor {
         this.ctx.beginPath();
         this.ctx.moveTo(curve.mid.x, curve.mid.y);
 
-        const endId = this.world.getAttachment(...curve.index.split("-"));
-        if (endId) {
+        if (curve.index?.includes('-') && this.world.getAttachment(...curve.index.split("-"))) {
+            // if curve is compositive (to an attachment) and attachment exists, draw quadratic curve
             this.ctx.quadraticCurveTo(
                 controlPoint.x, controlPoint.y,
                 curve.end.x, curve.end.y
