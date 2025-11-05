@@ -856,16 +856,15 @@ export class CanvasEditor {
 
     drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
-        const cvs = info.player?.get_canvas();
 
-        if (info.player && cvs) {
-            if (cvs.width === 0 || cvs.height === 0) {
+        if (info.icon) {
+            if (info.icon.width === 0 || info.icon.height === 0) {
                 console.warn('Canvas has zero width or height for item:', info.id);
                 return;
             }
             // fit the image height to radius
-            const scale = (radius * 2) / cvs.height;
-            this.ctx.drawImage(cvs, info.x - cvs.width * scale / 2, info.y - radius, cvs.width * scale, cvs.height * scale);
+            const scale = (radius * 2) / info.icon.height;
+            this.ctx.drawImage(info.icon, info.x - info.icon.width * scale / 2, info.y - radius, info.icon.width * scale, info.icon.height * scale);
         } else {
             this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
             this.ctx.fillStyle = info.color;

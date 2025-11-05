@@ -86,7 +86,7 @@ export function createSuperGifPlayer(src) {
         // Start playing and set up render loop
         player.play();
     });
-    return player;
+    return player.get_canvas();
 }
 
 
