@@ -870,7 +870,9 @@ export class CanvasEditor {
         this.ctx.setLineDash([8 / this.state.camera.zoom, 6 / this.state.camera.zoom]);
         this.ctx.beginPath();
         this.ctx.moveTo(curve.mid.x, curve.mid.y);
-        if (!curve.end.isNull) {
+
+        if (curve.index?.includes('-') && this.world.getAttachment(...curve.index.split("-"))) {
+            // if curve is compositive (to an attachment) and attachment exists, draw quadratic curve
             this.ctx.quadraticCurveTo(
                 controlPoint.x, controlPoint.y,
                 curve.end.x, curve.end.y
