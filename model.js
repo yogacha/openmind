@@ -6,6 +6,7 @@
  * @typedef {{startId: id, midId: id, endId: id | null}} ProjectionData
  * @typedef {string} color string in hex format of length 6
  * @typedef {{x: number, y: number}} coord
+ * @typedef {any} SuperGifCanvas
 */
 
 import utils, { Vec } from './utils.js';
@@ -196,7 +197,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this._nodes = new Map();
         /** @type {Map<id, {x: number, y: number, isNull: boolean}>} drag points for attachment endpoints */
         this._endpoints = new Map();
-        this._players = new Map();
+        /** @type {Map<id, HTMLImageElement | SuperGifCanvas>} */
+        this._icons = new Map();
     }
     toObject() {
         return {
@@ -296,7 +298,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             });
         }
     }
-    /** @type {(world: World) => Iterable<{id: id, type: ItemType, title: string, x: number, y: number, color: string, player: any | null}>} */
+    /** @type {(world: World) => Iterable<{id: id, type: ItemType, title: string, x: number, y: number, color: string, icon: any | null}>} */
     *nodes(world) {
         // this._updateNodes(world); // unneeded since we update on every add/delete/hide
         for (const [id, info] of this._nodes.entries()) {
@@ -312,7 +314,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 x: info.x,
                 y: info.y,
                 color: info.color.slice(0, 7) + (this.items.has(id) ? 'ff' : '88'),
-                player: this._players.get(id) ?? null,
+                icon: this._icons.get(id) ?? null,
             };
         }
     }
@@ -373,6 +375,16 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             height: maxY - minY,
         }
     }
+    /** @type {(item: Item) => void} */
+    _load_icon(item) {
+        if (item.icon.startsWith('data:image/gif;') || item.icon.endsWith('.gif')) {
+            this._icons.set(item.id, utils.createSuperGifPlayer(item.icon) );
+        } else {
+            const iconImg = new Image();
+            iconImg.src = item.icon;
+            this._icons.set(item.id, iconImg);
+        }
+    }
     // private methods
     /** @type {(world: World) => void} */
     _updateNodes(world) {
@@ -401,9 +413,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 }
             }
             
-            // Create player if item has icon and player doesn't exist
-            if (item.icon && !this._players.has(id) ) {
-                this._players.set(id, utils.createSuperGifPlayer(item.icon) );
+            // load icon if item has icon and icon not loaded yet
+            if (item.icon && !this._icons.has(id) ) {
+                this._load_icon(item);
             }
         }
         // now, _nodes contains all items in this.items
@@ -433,9 +445,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                     x: pos.x, y: pos.y,
                     color: this.colour(id)
                 });
-                // Create player for visible-only item if it has an icon
-                if (item.icon && !this._players.has(id)) {
-                    this._players.set(id, utils.createSuperGifPlayer(item.icon));
+                // load icon if item has icon and icon not loaded yet
+                if (item.icon && !this._icons.has(id)) {
+                    this._load_icon(item);
                 }
             }
         }

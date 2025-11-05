@@ -147,6 +147,8 @@ export class CanvasEditor {
         // File input for import
         document.getElementById('world-input').addEventListener('change', this.handleWorldSelect.bind(this));
         document.getElementById('workspace-input').addEventListener('change', this.handleWorkspaceSelect.bind(this));
+        document.getElementById('icon-input').addEventListener('change', this.handleIconSelect.bind(this));
+        document.getElementById('item-icon').addEventListener('click', this.selectIcon.bind(this));
 
         // Inline title editor
         const inlineTitleInput = document.getElementById('inline-title-input');
@@ -542,6 +544,42 @@ export class CanvasEditor {
     async handleWorldSelect(event) { }
     async handleWorkspaceSelect(event) { }
 
+    selectIcon() {
+        const iconInput = document.getElementById('icon-input');
+        iconInput.value = ''; // Reset to ensure change event fires for same file
+        iconInput.click();
+    }
+
+    async handleIconSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Check if it's a valid image type
+        if (!file.type.match(/^image\/(png|gif)$/)) {
+            alert('Please select a PNG or GIF file.');
+            return;
+        }
+
+        try {
+            // Convert selected file into base64 (using utils function)
+            const base64 = await utils.toBase64(file);
+            
+            // Update the icon display
+            const itemIcon = document.getElementById('item-icon');
+            itemIcon.style.backgroundImage = `url(${base64})`;
+
+            // Update the selected item's icon property
+            const item = this.world.get(this.state.interaction.selectedId);
+            if (item) {
+                item.icon = base64;
+                console.log('Updated item icon:', this.state.interaction.selectedId, file.name);
+            }
+        } catch (error) {
+            console.error('Error converting file to base64:', error);
+            alert('Error processing the image file.');
+        }
+    }
+
     /**
      * WINDOW EVENT HANDLERS
      */
@@ -675,10 +713,17 @@ export class CanvasEditor {
 
     showEditorPanel(item) {
         const panel = document.getElementById('side-panel');
+        const itemIcon = document.getElementById('item-icon');
         const titleInput = document.getElementById('item-title-input');
         const bodyInput = document.getElementById('item-body-input');
 
         // Populate form fields
+        if (item.icon) {
+            itemIcon.style.backgroundImage = `url(${item.icon})`;
+        } else {
+            itemIcon.style.backgroundImage = '';
+        }
+        itemIcon.classList.remove('hidden');
         titleInput.value = item.title || '';
         bodyInput.value = item.body || '';
 
@@ -856,16 +901,15 @@ export class CanvasEditor {
 
     drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
-        const cvs = info.player?.get_canvas();
 
-        if (info.player && cvs) {
-            if (cvs.width === 0 || cvs.height === 0) {
+        if (info.icon) {
+            if (info.icon.width === 0 || info.icon.height === 0) {
                 console.warn('Canvas has zero width or height for item:', info.id);
                 return;
             }
             // fit the image height to radius
-            const scale = (radius * 2) / cvs.height;
-            this.ctx.drawImage(cvs, info.x - cvs.width * scale / 2, info.y - radius, cvs.width * scale, cvs.height * scale);
+            const scale = (radius * 2) / info.icon.height;
+            this.ctx.drawImage(info.icon, info.x - info.icon.width * scale / 2, info.y - radius, info.icon.width * scale, info.icon.height * scale);
         } else {
             this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
             this.ctx.fillStyle = info.color;
