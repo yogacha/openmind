@@ -17,13 +17,26 @@ export class App extends CanvasEditor {
         console.log(`select(${this.state.interaction.selectedId})`);
 
         switch (this.currentMode()) {
-            case 'link': // selectedEndpoint is setted
+            case 'link-light': // selectedEndpoint is setted
                 if (this.state.interaction.selectedId) {
                     this.world.addProjection(this.state.interaction.selectedEndpoint,
                         this.state.interaction.selectedId);
                     console.log(`addProjection(${this.state.interaction.selectedEndpoint}, ${this.state.interaction.selectedId})`);
                 }
                 this.state.interaction.selectedEndpoint = null;
+                break;
+            case 'link-axis':
+                if (this.state.interaction.selectedId) {
+                    const value = this.state.interaction.anchorId === this.workspace.xaxis?.id ? coord.x : coord.y;
+                    this.world.axes.setValue({
+                        axisId: this.state.interaction.anchorId,
+                        itemId: this.state.interaction.selectedId,
+                        value: value, // TODO: determine value based on range
+                    });
+                    console.log(`setValue(${this.state.interaction.anchorId}, ${this.state.interaction.selectedId}, ${value})`);
+                }
+                this.state.interaction.anchorId = null;
+                break;
             case 'idle':
                 this.state.interaction.selectedEndpoint = this.workspace.getEndpointAtPosition(coord);
 
@@ -34,6 +47,7 @@ export class App extends CanvasEditor {
                 } else {
                     console.log('Started panning the canvas');
                 }
+                break;
         }
         // Store drag start position
         this.state.interaction.mouseDown = true;
@@ -47,7 +61,7 @@ export class App extends CanvasEditor {
 
         switch (this.currentMode()) {
             case 'attach':
-            case 'link':
+            case 'link-light':
                 // Update cursor for endpoint dragging
                 this.canvas.style.cursor = 'crosshair';
                 break;
@@ -69,6 +83,15 @@ export class App extends CanvasEditor {
             case 'select': // dragging a node/item
                 // Update cursor
                 this.canvas.style.cursor = 'move';
+
+                if (this.workspace.xaxis 
+                    && this.world.axes.getValue(this.workspace.xaxis.id, this.state.interaction.selectedId) !== undefined) {
+                    coord.x = null; // lock x
+                }
+                if (this.workspace.yaxis
+                    && this.world.axes.getValue(this.workspace.yaxis.id, this.state.interaction.selectedId) !== undefined) {
+                    coord.y = null; // lock y
+                }
 
                 this.workspace.setStyle(this.state.interaction.selectedId, coord.x, coord.y);
                 break;
@@ -380,7 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load default files on startup
     try {
-        await window.app.loadDefaultFiles();
+        // await window.app.loadDefaultFiles();
     } catch (error) {
         console.warn('Could not load default files:', error);
     }

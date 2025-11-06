@@ -45,6 +45,7 @@ export class CanvasEditor {
                 selectedId: null,
                 /** not necessary drag */
                 selectedEndpoint: null,
+                anchorId: null,
                 dragStart: { x: 0, y: 0 },
                 lastCamera: { centerX: 0, centerY: 0, zoom: 1 },
                 mouse: { x: 0, y: 0 },
@@ -190,6 +191,9 @@ export class CanvasEditor {
     }
     // =============================
     currentMode() {
+        if (this.state.interaction.anchorId) {
+            return 'link-axis'; // creating new link from selected axis
+        }
         if (this.state.interaction.mouseDown) { // pan/drag/attach
             if (this.state.interaction.selectedEndpoint) {
                 console.assert(this.state.interaction.selectedEndpoint.includes('-'),
@@ -204,7 +208,7 @@ export class CanvasEditor {
             if (this.state.interaction.selectedEndpoint) { // has select endpoint
                 console.assert(!this.state.interaction.selectedEndpoint.includes('-'),
                     `selectedEndpoint should be pure, got ${this.state.interaction.selectedEndpoint}`);
-                return 'link'; // creating new link from selected light
+                return 'link-light'; // creating new link from selected light
             } else {
                 return 'idle'; // default mode
             }
@@ -654,8 +658,14 @@ export class CanvasEditor {
             if (this.workspace.lights.get(item.id) === 'Off') this.toggleItemStatus();
             this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
         } else if (item.type === 'axis') {
-            // this.state.interaction.axes
-            // this.workspace.axes.set(item.id, this.state.camera);
+            if (this.workspace.xaxis?.id == item.id || this.workspace.yaxis?.id == item.id) { // axis already set
+                this.state.interaction.anchorId = this.state.interaction.selectedId; 
+            } else if (this.workspace.xaxis && this.workspace.yaxis) { // both axes set
+                console.log('Both axes are already set. Please disable one before enabling another.'); 
+            } else { // toggle on if not already set
+                this.toggleItemStatus();
+                this.state.interaction.anchorId = this.state.interaction.selectedId;
+            }
             console.log('Linking axis not implemented yet.');
         }
     }
@@ -703,6 +713,7 @@ export class CanvasEditor {
         // Clear selection
         this.state.interaction.selectedId = null;
         this.state.interaction.selectedEndpoint = null;
+        this.state.interaction.anchorId = null;
     }
 
     closeAllPopups() {
@@ -876,7 +887,19 @@ export class CanvasEditor {
         });
     }
 
+    drawDashline(start, end, color = '#888') {
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 2 / this.state.camera.zoom;
+        this.ctx.setLineDash([10 / this.state.camera.zoom, 10 / this.state.camera.zoom]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(start.x, start.y);
+        this.ctx.lineTo(end.x, end.y);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+    }
+
     drawAxes() {
+        // draw xaxis and yaxis
         for (const axis of [this.workspace.xaxis, this.workspace.yaxis]) {
             if (!axis) continue;
             const end = this.workspace._nodes.get(axis.id);
@@ -887,10 +910,55 @@ export class CanvasEditor {
             this.ctx.lineTo(end.x, end.y);
             this.ctx.stroke();
         }
+        // draw mouse-axis dashed line when anchoring
+        if (this.state.interaction.anchorId) {
+            let start;
+            const end = this._canvas2coord(this.state.interaction.mouse);
+            if (this.workspace.xaxis?.id === this.state.interaction.selectedId) {
+                start = { x: end.x, y: this.workspace.xaxis.start.y };
+            } else if (this.workspace.yaxis?.id === this.state.interaction.selectedId) {
+                start = { x: this.workspace.yaxis.start.x, y: end.y };
+            }
+            this.drawDashline(start, end);
+            console.log('drawing anchoring line for axis', this.state.interaction.selectedId);
+        }
+        
+        // highlight xaxis-to-item
+        if (this.workspace.xaxis) {
+            const itemIds = (this.state.interaction.selectedId === this.workspace.xaxis.id) ? 
+                this.workspace.items : [this.state.interaction.selectedId];
+            for (const id of itemIds) {
+                const value = this.world.axes.getValue(this.workspace.xaxis.id, id);
+                if (value !== undefined) {
+                    const end = this.workspace._nodes.get(id);
+                    const start = { x: end.x, y: this.workspace.xaxis.start.y };
+                    this.drawDashline(start, end);
+                    if (id === this.state.interaction.selectedId) {
+                        this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on xaxis
+                    }
+                }
+            }
+        }
+        // highlight yaxis-to-item
+        if (this.workspace.yaxis) {
+            const itemIds = (this.state.interaction.selectedId === this.workspace.yaxis.id) ?
+                this.workspace.items : [this.state.interaction.selectedId];
+            for (const id of itemIds) {
+                const value = this.world.axes.getValue(this.workspace.yaxis.id, id);
+                if (value !== undefined) {
+                    const end = this.workspace._nodes.get(id);
+                    const start = { x: this.workspace.yaxis.start.x, y: end.y };
+                    this.drawDashline(start, end);
+                    if (id === this.state.interaction.selectedId) {
+                        this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on yaxis
+                    }
+                }
+            }
+        }
     }
 
     drawCurves() {
-        if (this.currentMode() === 'link') { // link light to item
+        if (this.currentMode() === 'link-light') { // link light to item
             const nodeStyle = this.workspace._nodes.get(this.state.interaction.selectedId);
             const start = { x: nodeStyle.x, y: nodeStyle.y };
             const end = this._canvas2coord(this.state.interaction.mouse);
@@ -1009,9 +1077,6 @@ export class CanvasEditor {
         }
     }
 
-    drawArrow() {
-        // TODO: Draw arrow for axis items
-    }
     /**
      * COMMON PRACTICE 6: Cleanup Method
      * Important for preventing memory leaks when destroying the instance
