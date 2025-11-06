@@ -328,6 +328,9 @@ export class CanvasEditor {
             case 'add-material':
                 this.newItem('material');
                 break;
+            case 'add-axis':
+                this.newItem('axis');
+                break;
             case 'delete':
                 this.deleteSelectedItem();
                 break;
@@ -339,6 +342,9 @@ export class CanvasEditor {
                 break;
             case 'link-item':
                 this.startLinkingItem();
+                break;
+            case 'toggle-status':
+                this.toggleItemStatus();
                 break;
             case 'edit':
                 this.editSelectedItem();
@@ -503,7 +509,7 @@ export class CanvasEditor {
                 const selectedItem = this.state.interaction.selectedId ?
                     this.world.get(this.state.interaction.selectedId) : null;
                 if (selectedItem?.type === 'light') {
-                    this.toggleLight();
+                    this.toggleItemStatus();
                 }
                 break;
             case 'r':
@@ -643,13 +649,27 @@ export class CanvasEditor {
     }
 
     startLinkingItem() {
-        this.workspace.setLight(this.state.interaction.selectedId, 'On', this.world);
-        this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
+        const item = this.world.get(this.state.interaction.selectedId);
+        if (item.type === 'light') {
+            if (this.workspace.lights.get(item.id) === 'Off') this.toggleItemStatus();
+            this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
+        } else if (item.type === 'axis') {
+            console.log('Linking axis not implemented yet.');
+        }
     }
 
     editSelectedItem() { }
 
-    toggleLight() { }
+    toggleItemStatus() {
+        const item = this.world.get(this.state.interaction.selectedId);
+        if (item.type === 'light') {
+            const currentStatus = this.workspace.lights.get(item.id);
+            const newStatus = currentStatus === 'On' ? 'Off' : 'On';
+            this.workspace.setLight(item.id, newStatus, this.world);
+        } else if (item.type === 'axis') {
+            console.log('Toggling axis status not implemented yet.');
+        }
+    }
 
     download() { }
 
@@ -700,10 +720,16 @@ export class CanvasEditor {
         if (item.type === 'material') {
             document.getElementById('color-option').classList.add('hidden');
             document.getElementById('link-option').classList.add('hidden');
-        } else {
+            document.getElementById('toggle-option').classList.add('hidden');
+        } else if (item.type === 'light') {
             document.getElementById('color-option').classList.remove('hidden');
             document.getElementById('link-option').classList.remove('hidden');
-        }
+            document.getElementById('toggle-option').classList.remove('hidden');
+        } else if (item.type === 'axis') {
+            document.getElementById('color-option').classList.add('hidden');
+            document.getElementById('link-option').classList.remove('hidden');
+            document.getElementById('toggle-option').classList.remove('hidden');
+        }   
 
         menu.style.left = Math.min(this.state.interaction.mouse.x, this.canvas.width - menu.offsetWidth) + 'px';
         menu.style.top = Math.min(this.state.interaction.mouse.y, this.canvas.height - menu.offsetHeight) + 'px';
@@ -904,6 +930,7 @@ export class CanvasEditor {
     drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
 
+        // Draw icon/fill
         if (info.icon) {
             if (info.icon.width === 0 || info.icon.height === 0) {
                 console.warn('Canvas has zero width or height for item:', info.id);
@@ -912,12 +939,18 @@ export class CanvasEditor {
             // fit the image height to radius
             const scale = (radius * 2) / info.icon.height;
             this.ctx.drawImage(info.icon, info.x - info.icon.width * scale / 2, info.y - radius, info.icon.width * scale, info.icon.height * scale);
+        } else if (info.type === 'axis') {
+            const arrowImg = new Image();
+            arrowImg.src = 'assets/arrow.png';
+            const scale = (radius * 2) / arrowImg.height;
+            this.ctx.drawImage(arrowImg, info.x - arrowImg.width * scale / 2, info.y - radius, arrowImg.width * scale, arrowImg.height * scale);
         } else {
             this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
             this.ctx.fillStyle = info.color;
             this.ctx.fill();
         }
 
+        // Draw border (only for material type)
         if (info.type === 'material') {
             // Material: white fill with border
             this.ctx.strokeStyle = '#333333' + info.color.slice(-2);
@@ -942,6 +975,10 @@ export class CanvasEditor {
             this.ctx.stroke();
             this.ctx.setLineDash([]);
         }
+    }
+
+    drawArrow() {
+        // TODO: Draw arrow for axis items
     }
     /**
      * COMMON PRACTICE 6: Cleanup Method
