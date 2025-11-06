@@ -1,0 +1,117 @@
+{
+  "lights": [
+    {
+      "id": "t79e16e2ihe835xp632lte",
+      "status": "On"
+    },
+    {
+      "id": "s04pdu6ued9ygs9lrqhbj",
+      "status": "On"
+    },
+    {
+      "id": "pg1yreeh4okpz64uelnx",
+      "status": "On"
+    },
+    {
+      "id": "xoxmhkbx1ejg29i8cl905o",
+      "status": "On"
+    }
+  ],
+  "items": [
+    "h3yvj5gehz96rysi29kc0x",
+    "t79e16e2ihe835xp632lte",
+    "s04pdu6ued9ygs9lrqhbj",
+    "2m0vdcz1g4ey9nwxvuwxm",
+    "opuhd43zhvmc1575rqzxv",
+    "t339svurmsi43bjsb4ncr",
+    "pg1yreeh4okpz64uelnx",
+    "hoicoq6cjhr28dm04qlojk",
+    "xoxmhkbx1ejg29i8cl905o"
+  ],
+  "styles": [
+    {
+      "id": "h3yvj5gehz96rysi29kc0x",
+      "x": -196.02245043157993,
+      "y": -607.7421407675931,
+      "color": "#ffffff"
+    },
+    {
+      "id": "t79e16e2ihe835xp632lte",
+      "x": 162.06790235220674,
+      "y": -653.6588989791717,
+      "color": "#ecc482"
+    },
+    {
+      "id": "qq2jr3geodnm8lo7nxwc5",
+      "x": -561.8737351024041,
+      "y": -552.7395810978746,
+      "color": "#ffffff"
+    },
+    {
+      "id": "s04pdu6ued9ygs9lrqhbj",
+      "x": -155.0949641372797,
+      "y": -845.1215612745345,
+      "color": "#f789d5"
+    },
+    {
+      "id": "2m0vdcz1g4ey9nwxvuwxm",
+      "x": 195.24431854193028,
+      "y": -416.201504910268,
+      "color": "#ffffff"
+    },
+    {
+      "id": "opuhd43zhvmc1575rqzxv",
+      "x": -9.393112929570883,
+      "y": -309.79004054508744,
+      "color": "#ffffff"
+    },
+    {
+      "id": "t339svurmsi43bjsb4ncr",
+      "x": 512.8416121857001,
+      "y": -421.11280326558403,
+      "color": "#ffffff"
+    },
+    {
+      "id": "pg1yreeh4okpz64uelnx",
+      "x": 340.94616974963907,
+      "y": -132.98329975371047,
+      "color": "#91a5da"
+    },
+    {
+      "id": "hoicoq6cjhr28dm04qlojk",
+      "x": -80.36137416388748,
+      "y": -139.61355253338706,
+      "color": "#ffffff"
+    },
+    {
+      "id": "7b40cuygzxfatrqqbkdbr",
+      "x": -566.0069265320541,
+      "y": -227.935067956487,
+      "color": "#ffffff"
+    },
+    {
+      "id": "zdi9fyd6y2rew1lb53u85a",
+      "x": -467.28982959020186,
+      "y": -20.187147526619015,
+      "color": "#ffffff"
+    },
+    {
+      "id": "1zcjvu91yrvunt3rtu0sv",
+      "x": 583.2368886118963,
+      "y": -615.9276380264532,
+      "color": "#ffffff"
+    },
+    {
+      "id": "6cnl9go8kiq2qb50lnzeye",
+      "x": 755.1323310479573,
+      "y": -494.7822785953245,
+      "color": "#ffffff"
+    },
+    {
+      "id": "xoxmhkbx1ejg29i8cl905o",
+      "x": 761.6807288550455,
+      "y": -281.95934986496326,
+      "color": "#ddbcf6"
+    }
+  ]
+}

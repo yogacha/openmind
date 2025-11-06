@@ -28,11 +28,11 @@ what data we store, how we strore them
 * Components on the page:
   * canvas (inspiration: Obsidian, Heptabase, Figma)
     * position: infinite canvas, fill the whole background, blank initially (white)
-  * shapes on canvas (items: light, material; non-item: shadow)
+  * shapes on canvas (items: light, material, visible-only item; non-item: endpoint)
     * light item: circle with color fill, no border line, title text inside, selection ring when selected
     * material item: circle with white fill, solid border line, title text inside, selection ring when selected
     * visible only item: items in canvas are called visible, some of them are "attention" items, filled solidly, others are not "attention" items, filled semi-transparently (opacity 0.3), not selectable, not draggable, but can be double-clicked to add to attention (make solid).
-    * shadow: circle slightly larger than material item,  same color as its light, radial gradient fill (more transparent outward), no border line, no title text, not selectable, not draggable
+    * endpoint: 
   * help button
     * position: top right corner
   * search bar
@@ -44,26 +44,27 @@ what data we store, how we strore them
 # 互動層 (Interaction)
 
 * canvas
-  * `right click`: open creation context menu (add light, add material, paste if any copied item)
+  * `right click`: open creation context menu (add light, add material)
   * `left click + drag`: move camera (pan)
   * `scroll wheel`: zoom in/out (zoom at mouse position)
-  * `Ctrl + s`: save/update workspace - if no local folder selected, open folder dialog to choose where to save; if local folder already selected, update files in that folder
-  * `Ctrl + o`: open file dialog to load a folder containing `world.json`, `workspace.json`, load the data and render the canvas accordingly
+  * `Ctrl + s`: doenload workspace & world data as `workspace.json` and `world.json` files
+  * `Ctrl + o`: open dialog to load `world.json` & `workspace.json`, load the data and render the canvas accordingly
 * visible only item (semi-transparent)
   * `double click`: add to attention (make solid, editable, interactable)
 * attention item (light/material) (since without "attention" is not interactable)
   * `left click`: select item (show selection ring), if already selected, start drag
   * `left click + drag`: move item (drag)
-  * `right click`: open context menu (copy, delete, attention off, change color for light item, unlink from shadow for material item)
+  * `right click`: open context menu: delete, hide (attention off), change color for light item
   * `double click`: edit title (do not open side panel)
   * `enter while selected`: edit page (open side panel to edit title content)
   * `delete while selected`: delete item (remove from world, unpair from all projections, remove all attachments)
 * light item only
-  * `right click` on another material when `selected`: pair/unpair light and material (add/remove projection)
   * `l` while `selected`: toggle light on/off to show/hide shadows & visible only items attached to shadows (show as semi-transparent if not in "attention"), when turning off, shadows and attached materials without "attention" will disappear.
-* shadow (not an item, not interactable, just visual)
+* endpoint (not an item, draggable)
+  * created when linking a light item to an item.
   * passive: show/hide based on its light's on/off status
-  * passive: when a dragging material is released close enough to a empty shadow (not linked to any item), attach the material to the shadow (set projection's `attachedId` to the material's id), the material will follow the shadow when the light or material moves, the attached material will show as semi-transparent if the material is visible only (not in "attention")
+  * passive: when the dragged endpoint is released close enough to an item, attach the item (set projection's `attachedId` to the item's id)
+  * `right click` on another material when `selected`: pair/unpair light and material (add/remove projection)
 * help button
   * `click`: open help dialog (with instructions)
 * help dialog

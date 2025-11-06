@@ -39,8 +39,6 @@ export class App extends CanvasEditor {
         this.state.interaction.mouseDown = true;
         this.state.interaction.dragStart = { ...this.state.interaction.mouse };
         this.state.interaction.lastCamera = { ...this.state.camera };
-
-        this.render();
     }
 
     handleCanvasMouseMove(event) {
@@ -52,7 +50,6 @@ export class App extends CanvasEditor {
             case 'link':
                 // Update cursor for endpoint dragging
                 this.canvas.style.cursor = 'crosshair';
-                this.render();
                 break;
             case 'pan':
                 // Update cursor
@@ -68,14 +65,12 @@ export class App extends CanvasEditor {
                     this.state.interaction.lastCamera.centerY - delta.y,
                     null
                 );
-                this.render();
                 break;
             case 'select': // dragging a node/item
                 // Update cursor
                 this.canvas.style.cursor = 'move';
 
                 this.workspace.setStyle(this.state.interaction.selectedId, coord.x, coord.y);
-                this.render();
                 break;
         }
     }
@@ -113,7 +108,6 @@ export class App extends CanvasEditor {
         this.canvas.style.cursor = 'grab';
 
         // Re-render to show endpoint back in original position
-        this.render();
     }
 
     handleCanvasDoubleClick(event) {
@@ -148,7 +142,6 @@ export class App extends CanvasEditor {
                 break;
         }
         this.state.interaction.mouseDown = false;
-        this.render();
     }
 
 
@@ -164,7 +157,6 @@ export class App extends CanvasEditor {
         this.workspace.setStyle(item.id, coord.x, coord.y);
 
         console.log(`addItem(${item.type}, ${coord.x}, ${coord.y})`);
-        this.render();
     }
     deleteSelectedItem() {
         if (!this.state.interaction.selectedId) {
@@ -186,20 +178,15 @@ export class App extends CanvasEditor {
         // Clear selection
         this.state.interaction.selectedId = null;
 
-        // Re-render to show changes
-        this.render();
-
         console.log('Deleted item:', itemId, 'Type:', item.type);
     }
     deleteProjection() {
         const [startId, midId] = this.state.interaction.selectedEndpoint.split('-');
         this.world.removeProjection(startId, midId);
         this.state.interaction.selectedEndpoint = null;
-        this.render();
     }
     hideSelectedItem() {
         this.workspace.hide(this.state.interaction.selectedId, this.world);
-        this.render();
     }
     editSelectedItem() {
         if (!this.state.interaction.selectedId) return;
@@ -212,9 +199,6 @@ export class App extends CanvasEditor {
 
         // Add item to workspace when editing (if not already there)
         this.workspace.add(selectedItem, this.world);
-
-        // Re-render to show any newly added nodes
-        this.render();
 
         console.log('Item added to workspace:', selectedItem.id);
 
@@ -237,12 +221,42 @@ export class App extends CanvasEditor {
         const newStatus = (currentStatus === 'On') ? 'Off' : 'On';
 
         this.workspace.setLight(this.state.interaction.selectedId, newStatus, this.world);
-        this.render();
     }
 
     // ============================================================================
     // File 
     // ============================================================================
+    async loadDefaultFiles() {
+        try {
+            // Load world file
+            const worldResponse = await fetch('./content/openmind101/hello.world.json');
+            if (!worldResponse.ok) throw new Error('World file not found');
+            
+            const worldContent = await worldResponse.text();
+            this.world = World.fromObject(JSON.parse(worldContent));
+            this.state.name.world = 'hello';
+            console.log('Loaded default world: hello');
+
+            // Load workspace file
+            const workspaceResponse = await fetch('./content/openmind101/hello.workspace.json');
+            if (!workspaceResponse.ok) throw new Error('Workspace file not found');
+            
+            const workspaceContent = await workspaceResponse.text();
+            this.workspace = Workspace.fromObject(JSON.parse(workspaceContent));
+            this.state.name.workspace = 'hello';
+            
+            document.title = 'hello - world';
+            
+            this.workspace.initializeNodes(this.world);
+            this.resetCamera();
+            
+            console.log('Loaded default workspace: hello');
+        } catch (error) {
+            console.error('Error loading default files:', error);
+            throw error;
+        }
+    }
+
     async handleWorldSelect(event) {
         const files = event.target.files;
         const file = files[0];
@@ -298,7 +312,6 @@ export class App extends CanvasEditor {
 
         this.workspace.initializeNodes(this.world);
         this.resetCamera();
-        this.render();
 
         // Complete the sequential file opening process
         if (this.state.ui.openingFiles && this.state.ui.openingStep === 'workspace') {
@@ -313,9 +326,10 @@ export class App extends CanvasEditor {
         const worldText = JSON.stringify(this.world.toObject(), null, 2);
 
         // Determine filenames
-        const worldFilename = 'world.json';
+        const worldInput = document.getElementById('world-input');
         const workspaceInput = document.getElementById('workspace-input');
-        const workspaceFilename = workspaceInput.files.length > 0 ? workspaceInput.files[0].name : 'workspace.json';
+        const worldFilename = worldInput.files.length > 0 ? worldInput.files[0].name : 'haha.world.json';
+        const workspaceFilename = workspaceInput.files.length > 0 ? workspaceInput.files[0].name : 'haha.workspace.json';
 
         utils.downloadJSONFile(worldFilename, worldText);
         utils.downloadJSONFile(workspaceFilename, workspaceText);
@@ -361,6 +375,13 @@ function throttle(func, limit) {
 // ============================================================================
 
 // Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     window.app = new App();
+    
+    // Load default files on startup
+    try {
+        await window.app.loadDefaultFiles();
+    } catch (error) {
+        console.warn('Could not load default files:', error);
+    }
 });

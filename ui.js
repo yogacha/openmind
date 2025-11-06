@@ -147,6 +147,8 @@ export class CanvasEditor {
         // File input for import
         document.getElementById('world-input').addEventListener('change', this.handleWorldSelect.bind(this));
         document.getElementById('workspace-input').addEventListener('change', this.handleWorkspaceSelect.bind(this));
+        document.getElementById('icon-input').addEventListener('change', this.handleIconSelect.bind(this));
+        document.getElementById('item-icon').addEventListener('click', this.selectIcon.bind(this));
 
         // Inline title editor
         const inlineTitleInput = document.getElementById('inline-title-input');
@@ -176,7 +178,6 @@ export class CanvasEditor {
         this.state.camera.centerY = centerY ?? this.state.camera.centerY;
         this.state.camera.zoom = zoom ?? this.state.camera.zoom;
         // console.log('setCamera', centerX, centerY, zoom);
-        // this.render();
     }
     resetCamera(margin = 100) {
         const rect = this.workspace.getBoundingRect();
@@ -232,7 +233,6 @@ export class CanvasEditor {
         const newZoom = Math.max(0.1, Math.min(5, this.state.camera.zoom * zoomFactor));
 
         this.setCamera(null, null, newZoom);
-        this.render();
     }
 
     handleCanvasContextMenu(event) {
@@ -245,8 +245,6 @@ export class CanvasEditor {
             // Show canvas context menu
             this.showCanvasContextMenu();
         }
-
-        this.render();
     }
 
     handleCanvasDoubleClick(event) { }
@@ -380,7 +378,6 @@ export class CanvasEditor {
             this.workspace.setStyle(id, this.state.camera.centerX, this.state.camera.centerY);
         }
         this.state.interaction.selectedId = id;
-        this.render();
     }
 
     showSearchDropdown() {
@@ -511,7 +508,6 @@ export class CanvasEditor {
                 break;
             case 'r':
                 this.resetCamera();
-                this.render();
                 break;
         }
     }
@@ -536,18 +532,59 @@ export class CanvasEditor {
         this.state.ui.openingFiles = true;
         this.state.ui.openingStep = 'world';
 
+        // Reset file inputs to ensure change events fire even for the same file
+        const worldInput = document.getElementById('world-input');
+        const workspaceInput = document.getElementById('workspace-input');
+        worldInput.value = '';
+        workspaceInput.value = '';
+
         // Trigger world file selection
-        document.getElementById('world-input').click();
+        worldInput.click();
     }
     async handleWorldSelect(event) { }
     async handleWorkspaceSelect(event) { }
+
+    selectIcon() {
+        const iconInput = document.getElementById('icon-input');
+        iconInput.value = ''; // Reset to ensure change event fires for same file
+        iconInput.click();
+    }
+
+    async handleIconSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Check if it's a valid image type
+        if (!file.type.match(/^image\/(png|gif)$/)) {
+            alert('Please select a PNG or GIF file.');
+            return;
+        }
+
+        try {
+            // Convert selected file into base64 (using utils function)
+            const base64 = await utils.toBase64(file);
+            
+            // Update the icon display
+            const itemIcon = document.getElementById('item-icon');
+            itemIcon.style.backgroundImage = `url(${base64})`;
+
+            // Update the selected item's icon property
+            const item = this.world.get(this.state.interaction.selectedId);
+            if (item) {
+                item.icon = base64;
+                console.log('Updated item icon:', this.state.interaction.selectedId, file.name);
+            }
+        } catch (error) {
+            console.error('Error converting file to base64:', error);
+            alert('Error processing the image file.');
+        }
+    }
 
     /**
      * WINDOW EVENT HANDLERS
      */
     handleWindowResize(event) {
         this.resizeCanvas();
-        this.render();
     }
 
     // ============================================================================
@@ -578,9 +615,6 @@ export class CanvasEditor {
         item.title = titleInput.value.trim() || 'Untitled';
         item.body = bodyInput.value;
 
-        // Re-render to show updated title
-        this.render();
-
         // Hide panel
         this.hideEditorPanel();
 
@@ -601,14 +635,11 @@ export class CanvasEditor {
         }
 
         this.hideInlineTitleEditor();
-        this.render();
     }
 
     changeItemColor() {
-        // random color for demo
-        const color = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        const color = utils.randomColor();
         this.workspace.setStyle(this.state.interaction.selectedId, null, null, color);
-        this.render();
     }
 
     startLinkingItem() {
@@ -633,7 +664,6 @@ export class CanvasEditor {
         // Clear selection
         this.state.interaction.selectedId = null;
         this.state.interaction.selectedEndpoint = null;
-        this.render();
     }
 
     closeAllPopups() {
@@ -683,10 +713,17 @@ export class CanvasEditor {
 
     showEditorPanel(item) {
         const panel = document.getElementById('side-panel');
+        const itemIcon = document.getElementById('item-icon');
         const titleInput = document.getElementById('item-title-input');
         const bodyInput = document.getElementById('item-body-input');
 
         // Populate form fields
+        if (item.icon) {
+            itemIcon.style.backgroundImage = `url(${item.icon})`;
+        } else {
+            itemIcon.style.backgroundImage = '';
+        }
+        itemIcon.classList.remove('hidden');
         titleInput.value = item.title || '';
         bodyInput.value = item.body || '';
 
@@ -725,7 +762,6 @@ export class CanvasEditor {
             input.focus();
             input.select(); // Select all text for easy editing
         }, 10);
-        // this.render();
     }
 
     hideHelpModal() {
@@ -763,7 +799,6 @@ export class CanvasEditor {
         }
 
         this.hideInlineTitleEditor();
-        this.render();
     }
 
 
@@ -790,6 +825,9 @@ export class CanvasEditor {
         // Restore context
         this.ctx.restore();
 
+        requestAnimationFrame(() => {
+            this.render();
+        });
     }
 
 
@@ -832,7 +870,9 @@ export class CanvasEditor {
         this.ctx.setLineDash([8 / this.state.camera.zoom, 6 / this.state.camera.zoom]);
         this.ctx.beginPath();
         this.ctx.moveTo(curve.mid.x, curve.mid.y);
-        if (!curve.end.isNull) {
+
+        if (curve.index?.includes('-') && this.world.getAttachment(...curve.index.split("-"))) {
+            // if curve is compositive (to an attachment) and attachment exists, draw quadratic curve
             this.ctx.quadraticCurveTo(
                 controlPoint.x, controlPoint.y,
                 curve.end.x, curve.end.y
@@ -863,9 +903,20 @@ export class CanvasEditor {
 
     drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
-        this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
-        this.ctx.fillStyle = info.color;
-        this.ctx.fill();
+
+        if (info.icon) {
+            if (info.icon.width === 0 || info.icon.height === 0) {
+                console.warn('Canvas has zero width or height for item:', info.id);
+                return;
+            }
+            // fit the image height to radius
+            const scale = (radius * 2) / info.icon.height;
+            this.ctx.drawImage(info.icon, info.x - info.icon.width * scale / 2, info.y - radius, info.icon.width * scale, info.icon.height * scale);
+        } else {
+            this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
+            this.ctx.fillStyle = info.color;
+            this.ctx.fill();
+        }
 
         if (info.type === 'material') {
             // Material: white fill with border
@@ -879,7 +930,7 @@ export class CanvasEditor {
         this.ctx.font = `${14 / this.state.camera.zoom}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(info.title, info.x, info.y);
+        this.ctx.fillText(info.title, info.x, info.y - (7 + radius) * 1.2);
 
         // Draw selection ring if selected
         if (this.state.interaction.selectedId === info.id) {

@@ -22,10 +22,17 @@ export const Vec = {
     antipode(center, v) {
         return Vec.add(center, Vec.sub(center, v));
     },
+    midpoint(a, b) {
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    },
 }
 
 export function randId() { // generate random ID
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+export function randUniform(low, high) {
+    return Math.random() * (high - low) + low
 }
 
 export function downloadJSONFile(filename, content) {
@@ -36,6 +43,15 @@ export function downloadJSONFile(filename, content) {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+export function randomColor(brightnessLow = 128) {
+    // Generate brighter colors by ensuring minimum brightness
+    const c = 256 - brightnessLow;
+    const r = Math.floor(Math.random() * c + brightnessLow); // [brightnessLow, 256)
+    const g = Math.floor(Math.random() * c + brightnessLow); // [brightnessLow, 256)
+    const b = Math.floor(Math.random() * c + brightnessLow); // [brightnessLow, 256)
+    return '#' + r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + b.toString(16).padStart(2, '0');
 }
 
 /**
@@ -49,9 +65,55 @@ export function escapeHtml(text) {
     return div.innerHTML;
 }
 
+export function createSuperGifPlayer(src) {
+    // Initialize SuperGif player
+
+    const gif = document.createElement('img');
+    gif.className = 'hidden';
+    gif.src = src;
+    document.body.appendChild(gif);
+
+
+    const player = new SuperGif({
+        gif: gif,
+        auto_play: false
+    });
+
+    player.load(() => {
+        // Hide SuperGif's canvas if it creates one
+        const superGifCanvas = player.get_canvas();
+        if (superGifCanvas && superGifCanvas.parentNode) {
+            superGifCanvas.style.display = 'none';
+        }
+
+        // Start playing and set up render loop
+        player.play();
+    });
+    return player.get_canvas();
+}
+
+
+/**
+ * Convert a File to base64 string
+ * @param {File} file - File to convert
+ * @returns {Promise<string>} Base64 string representation of the file
+ */
+export function toBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
 export default {
     Vec,
     randId,
+    randUniform,
     downloadJSONFile,
+    randomColor,
     escapeHtml,
+    createSuperGifPlayer,
+    toBase64,
 };
