@@ -39,7 +39,7 @@
       "id": "zdi9fyd6y2rew1lb53u85a",
       "type": "material",
       "title": "Software foundation",
-      "body": "",
+      "body": "editable, \n\n\n[@interactability=4] ()",
       "icon": ""
     },
     {
@@ -109,6 +109,62 @@
       "id": "wqyfdzmweurn7fttpyula",
       "type": "material",
       "title": "visual first & dual channel",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "v0yeiwbvkz86iqeb0ij1",
+      "type": "material",
+      "title": "book",
+      "body": "\n\n\n[@interactablity]\n[@linearity=3]\n[@organized=5]",
+      "icon": ""
+    },
+    {
+      "id": "qzndvpdxn2jrijvh6pu15",
+      "type": "material",
+      "title": "video",
+      "body": "\n\n[@interactability=1]\n[@linearity=5]",
+      "icon": ""
+    },
+    {
+      "id": "cm3gjzkanmexopjuf6imnb",
+      "type": "material",
+      "title": "noteapp",
+      "body": "\n[@interactablity=3]\n[@linearity=2]\n[@organized=4]",
+      "icon": ""
+    },
+    {
+      "id": "o2b2esmlk12bi7ksd2iep",
+      "type": "light",
+      "title": "linearity <-",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "1wmcey2rrur7t017meipwf",
+      "type": "light",
+      "title": "Interactability <-",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "pah1hqhvoleif5q4cefw",
+      "type": "light",
+      "title": "visual heavy <-> text heavy",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "ufsisier9tq03d6aa87zm",
+      "type": "material",
+      "title": "khan academy",
+      "body": "",
+      "icon": ""
+    },
+    {
+      "id": "1ihhmrgz44rsq03zxb1jn",
+      "type": "material",
+      "title": "",
       "body": "",
       "icon": ""
     }
