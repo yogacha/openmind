@@ -654,6 +654,8 @@ export class CanvasEditor {
             if (this.workspace.lights.get(item.id) === 'Off') this.toggleItemStatus();
             this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
         } else if (item.type === 'axis') {
+            // this.state.interaction.axes
+            // this.workspace.axes.set(item.id, this.state.camera);
             console.log('Linking axis not implemented yet.');
         }
     }
@@ -667,7 +669,24 @@ export class CanvasEditor {
             const newStatus = currentStatus === 'On' ? 'Off' : 'On';
             this.workspace.setLight(item.id, newStatus, this.world);
         } else if (item.type === 'axis') {
-            console.log('Toggling axis status not implemented yet.');
+            let start, end;
+            if (this.workspace.xaxis?.id === item.id) { // x axis = item, turn off
+                this.workspace.xaxis = null;
+            } else if (this.workspace.yaxis?.id === item.id) { // y axis = item, turn off
+                this.workspace.yaxis = null;
+            } else if (!this.workspace.xaxis) { // x axis not set, set x axis
+                start = this._canvas2coord({ x: 50, y: this.canvas.height - 100 });
+                end = this._canvas2coord({ x: this.canvas.width - 50, y: this.canvas.height - 100 });
+                this.workspace.setStyle(item.id, end.x, end.y);
+                this.workspace.xaxis = { id: item.id, start };
+            } else if (!this.workspace.yaxis) { // y axis not set, set y axis
+                start = this._canvas2coord({ x: 100, y: this.canvas.height - 50 });
+                end = this._canvas2coord({ x: 100, y: 120 });
+                this.workspace.setStyle(item.id, end.x, end.y);
+                this.workspace.yaxis = { id: item.id, start };
+            } else {
+                console.log('Both axes are already set. Please disable one before enabling another.');
+            }
         }
     }
 
@@ -845,6 +864,7 @@ export class CanvasEditor {
         this.ctx.translate(-this.state.camera.centerX, -this.state.camera.centerY);
 
         // Draw
+        this.drawAxes();
         this.drawCurves();
         this.drawNodes();
 
@@ -856,6 +876,18 @@ export class CanvasEditor {
         });
     }
 
+    drawAxes() {
+        for (const axis of [this.workspace.xaxis, this.workspace.yaxis]) {
+            if (!axis) continue;
+            const end = this.workspace._nodes.get(axis.id);
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 7 / this.state.camera.zoom;
+            this.ctx.beginPath();
+            this.ctx.moveTo(axis.start.x, axis.start.y);
+            this.ctx.lineTo(end.x, end.y);
+            this.ctx.stroke();
+        }
+    }
 
     drawCurves() {
         if (this.currentMode() === 'link') { // link light to item
@@ -941,7 +973,7 @@ export class CanvasEditor {
             this.ctx.drawImage(info.icon, info.x - info.icon.width * scale / 2, info.y - radius, info.icon.width * scale, info.icon.height * scale);
         } else if (info.type === 'axis') {
             const arrowImg = new Image();
-            arrowImg.src = 'assets/arrow.png';
+            arrowImg.src = 'assets/square.png';
             const scale = (radius * 2) / arrowImg.height;
             this.ctx.drawImage(arrowImg, info.x - arrowImg.width * scale / 2, info.y - radius, arrowImg.width * scale, arrowImg.height * scale);
         } else {

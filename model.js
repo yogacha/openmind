@@ -247,6 +247,10 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this._endpoints = new Map();
         /** @type {Map<id, HTMLImageElement | SuperGifCanvas>} */
         this._icons = new Map();
+        /** @type {{id: id, start: coord} | null} selected x-axis id */
+        this.xaxis = null;
+        /** @type {{id: id, start: coord} | null} selected y-axis id */
+        this.yaxis = null;
     }
     toObject() {
         return {
@@ -340,6 +344,14 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     /** @type {(id: id, x?: number | null, y?: number | null, color?: color | null) => void} */
     setStyle(id, x = null, y = null, color = null) {
         const style = this._nodes.get(id);
+        if (x !== null && y !== null && style) { // move axis start point accordingly
+            const delta = Vec.sub({x, y}, style);
+            if (this.xaxis?.id == id) {
+                this.xaxis.start = Vec.add(this.xaxis.start, delta);
+            } else if (this.yaxis?.id == id) {
+                this.yaxis.start = Vec.add(this.yaxis.start, delta);
+            }
+        }
         if (style) {
             this._nodes.set(id, {
                 x: x ?? style.x, y: y ?? style.y, color: color ?? style.color,
