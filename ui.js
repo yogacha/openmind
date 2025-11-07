@@ -512,7 +512,7 @@ export class CanvasEditor {
             case 'l':
                 const selectedItem = this.state.interaction.selectedId ?
                     this.world.get(this.state.interaction.selectedId) : null;
-                if (selectedItem?.type === 'light') {
+                if (selectedItem?.type === 'light' || selectedItem?.type === 'axis') {
                     this.toggleItemStatus();
                 }
                 break;
@@ -674,26 +674,21 @@ export class CanvasEditor {
 
     toggleItemStatus() {
         const item = this.world.get(this.state.interaction.selectedId);
+        const coord = this.workspace._nodes.get(item.id);
+        const lowerLeft = this._canvas2coord({ x: 50, y: this.canvas.height - 50 });
         if (item.type === 'light') {
             const currentStatus = this.workspace.lights.get(item.id);
             const newStatus = currentStatus === 'On' ? 'Off' : 'On';
             this.workspace.setLight(item.id, newStatus, this.world);
         } else if (item.type === 'axis') {
-            let start, end;
             if (this.workspace.xaxis?.id === item.id) { // x axis = item, turn off
                 this.workspace.xaxis = null;
             } else if (this.workspace.yaxis?.id === item.id) { // y axis = item, turn off
                 this.workspace.yaxis = null;
             } else if (!this.workspace.xaxis) { // x axis not set, set x axis
-                start = this._canvas2coord({ x: 50, y: this.canvas.height - 100 });
-                end = this._canvas2coord({ x: this.canvas.width - 50, y: this.canvas.height - 100 });
-                this.workspace.setStyle(item.id, end.x, end.y);
-                this.workspace.xaxis = { id: item.id, start };
+                this.workspace.xaxis = { id: item.id, start: { x: lowerLeft.x, y: coord.y } };
             } else if (!this.workspace.yaxis) { // y axis not set, set y axis
-                start = this._canvas2coord({ x: 100, y: this.canvas.height - 50 });
-                end = this._canvas2coord({ x: 100, y: 120 });
-                this.workspace.setStyle(item.id, end.x, end.y);
-                this.workspace.yaxis = { id: item.id, start };
+                this.workspace.yaxis = { id: item.id, start: { x: coord.x, y: lowerLeft.y } };
             } else {
                 console.log('Both axes are already set. Please disable one before enabling another.');
             }

@@ -26,7 +26,7 @@ export class App extends CanvasEditor {
                 this.state.interaction.selectedEndpoint = null;
                 break;
             case 'link-axis':
-                if (this.state.interaction.selectedId) {
+                if (this.state.interaction.selectedId && this.state.interaction.anchorId !== this.state.interaction.selectedId) {
                     const value = this.state.interaction.anchorId === this.workspace.xaxis?.id ? coord.x : coord.y;
                     this.world.axes.setValue({
                         axisId: this.state.interaction.anchorId,
@@ -62,6 +62,7 @@ export class App extends CanvasEditor {
         switch (this.currentMode()) {
             case 'attach':
             case 'link-light':
+            case 'link-axis':
                 // Update cursor for endpoint dragging
                 this.canvas.style.cursor = 'crosshair';
                 break;

@@ -308,6 +308,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     delete(id, world) {
         world.delete(id); // remove from world first
         this.hide(id, world);
+        if (this.xaxis?.id === id) this.xaxis = null;
+        if (this.yaxis?.id === id) this.yaxis = null;
     }
     /** @type {(id: id, world: World) => void} */
     hide(id, world) { // remove from attention, but keep in world
@@ -347,9 +349,9 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         if (x !== null && y !== null && style) { // move axis start point accordingly
             const delta = Vec.sub({x, y}, style);
             if (this.xaxis?.id == id) {
-                this.xaxis.start = Vec.add(this.xaxis.start, delta);
+                this.xaxis.start.y = this.xaxis.start.y + delta.y;
             } else if (this.yaxis?.id == id) {
-                this.yaxis.start = Vec.add(this.yaxis.start, delta);
+                this.yaxis.start.x = this.yaxis.start.x + delta.x;
             }
         }
         if (style) {
