@@ -527,6 +527,23 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 );
             }
         }
+        // visible-only xaxis item
+        if (this.xaxis) {
+            for (const id of world.axes.get(this.xaxis.id)?.keys() ?? []) {
+                if (!this.items.has(id) && !visibleOnly.has(id)) {
+                    visibleOnly.set(id, { x: 0, y: this.xaxis.start.y });
+                }
+            }
+        }
+        // visible-only yaxis item
+        if (this.yaxis) {
+            for (const id of world.axes.get(this.yaxis.id)?.keys() ?? []) {
+                if (!this.items.has(id) && !visibleOnly.has(id)) {
+                    visibleOnly.set(id, { x: this.yaxis.start.x, y: 0 });
+                }
+            }
+        }
+
         // remove invisible nodes
         for (const id of this._nodes.keys()) {
             if (!this.items.has(id) && !visibleOnly.has(id)) {
@@ -616,7 +633,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             } else if (xrange.min === xrange.max) { // expand degenerate range
                 this._xrange = { min: xrange.min - 3, max: xrange.max + 3 };
             } else { // normal range
-                this._xrange = xrange;
+                const margin = 0.1 * (xrange.max - xrange.min);
+                this._xrange = { min: xrange.min - margin, max: xrange.max + margin }
             }
         }
     
@@ -629,7 +647,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
             } else if (yrange.min === yrange.max) { // expand degenerate range
                 this._yrange = { min: yrange.min - 3, max: yrange.max + 3 };
             } else { // normal range
-                this._yrange = yrange;
+                const margin = 0.1 * (yrange.max - yrange.min);
+                this._yrange = { min: yrange.min - margin, max: yrange.max + margin }
             }
         }
     }
