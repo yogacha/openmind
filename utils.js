@@ -27,6 +27,15 @@ export const Vec = {
     },
 }
 
+export function lerp(a, b, t) {
+    return a + (b - a) * t; // c
+}
+
+export function unlerp(a, b, c) {
+    return (c - a) / (b - a); // t
+}
+
+
 export function randId() { // generate random ID
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
@@ -109,6 +118,8 @@ export function toBase64(file) {
 
 export default {
     Vec,
+    lerp,
+    unlerp,
     randId,
     randUniform,
     downloadJSONFile,

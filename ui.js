@@ -45,6 +45,7 @@ export class CanvasEditor {
                 selectedId: null,
                 /** not necessary drag */
                 selectedEndpoint: null,
+                anchorId: null,
                 dragStart: { x: 0, y: 0 },
                 lastCamera: { centerX: 0, centerY: 0, zoom: 1 },
                 mouse: { x: 0, y: 0 },
@@ -190,6 +191,9 @@ export class CanvasEditor {
     }
     // =============================
     currentMode() {
+        if (this.state.interaction.anchorId) {
+            return 'link-axis'; // creating new link from selected axis
+        }
         if (this.state.interaction.mouseDown) { // pan/drag/attach
             if (this.state.interaction.selectedEndpoint) {
                 console.assert(this.state.interaction.selectedEndpoint.includes('-'),
@@ -204,7 +208,7 @@ export class CanvasEditor {
             if (this.state.interaction.selectedEndpoint) { // has select endpoint
                 console.assert(!this.state.interaction.selectedEndpoint.includes('-'),
                     `selectedEndpoint should be pure, got ${this.state.interaction.selectedEndpoint}`);
-                return 'link'; // creating new link from selected light
+                return 'link-light'; // creating new link from selected light
             } else {
                 return 'idle'; // default mode
             }
@@ -328,6 +332,9 @@ export class CanvasEditor {
             case 'add-material':
                 this.newItem('material');
                 break;
+            case 'add-axis':
+                this.newItem('axis');
+                break;
             case 'delete':
                 this.deleteSelectedItem();
                 break;
@@ -339,6 +346,9 @@ export class CanvasEditor {
                 break;
             case 'link-item':
                 this.startLinkingItem();
+                break;
+            case 'toggle-status':
+                this.toggleItemStatus();
                 break;
             case 'edit':
                 this.editSelectedItem();
@@ -502,8 +512,8 @@ export class CanvasEditor {
             case 'l':
                 const selectedItem = this.state.interaction.selectedId ?
                     this.world.get(this.state.interaction.selectedId) : null;
-                if (selectedItem?.type === 'light') {
-                    this.toggleLight();
+                if (selectedItem?.type === 'light' || selectedItem?.type === 'axis') {
+                    this.toggleItemStatus();
                 }
                 break;
             case 'r':
@@ -643,13 +653,46 @@ export class CanvasEditor {
     }
 
     startLinkingItem() {
-        this.workspace.setLight(this.state.interaction.selectedId, 'On', this.world);
-        this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
+        const item = this.world.get(this.state.interaction.selectedId);
+        if (item.type === 'light') {
+            if (this.workspace.lights.get(item.id) === 'Off') this.toggleItemStatus();
+            this.state.interaction.selectedEndpoint = this.state.interaction.selectedId;
+        } else if (item.type === 'axis') {
+            if (this.workspace.xaxis?.id == item.id || this.workspace.yaxis?.id == item.id) { // axis already set
+                this.state.interaction.anchorId = this.state.interaction.selectedId; 
+            } else if (this.workspace.xaxis && this.workspace.yaxis) { // both axes set
+                console.log('Both axes are already set. Please disable one before enabling another.'); 
+            } else { // toggle on if not already set
+                this.toggleItemStatus();
+                this.state.interaction.anchorId = this.state.interaction.selectedId;
+            }
+        }
     }
 
     editSelectedItem() { }
 
-    toggleLight() { }
+    toggleItemStatus() {
+        const item = this.world.get(this.state.interaction.selectedId);
+        const coord = this.workspace._nodes.get(item.id);
+        const lowerLeft = this._canvas2coord({ x: 50, y: this.canvas.height - 50 });
+        if (item.type === 'light') {
+            const currentStatus = this.workspace.lights.get(item.id);
+            const newStatus = currentStatus === 'On' ? 'Off' : 'On';
+            this.workspace.setLight(item.id, newStatus, this.world);
+        } else if (item.type === 'axis') {
+            if (this.workspace.xaxis?.id === item.id) { // x axis = item, turn off
+                this.workspace.xaxis = null;
+            } else if (this.workspace.yaxis?.id === item.id) { // y axis = item, turn off
+                this.workspace.yaxis = null;
+            } else if (!this.workspace.xaxis) { // x axis not set, set x axis
+                this.workspace.xaxis = { id: item.id, start: { x: lowerLeft.x, y: coord.y } };
+            } else if (!this.workspace.yaxis) { // y axis not set, set y axis
+                this.workspace.yaxis = { id: item.id, start: { x: coord.x, y: lowerLeft.y } };
+            } else {
+                console.log('Both axes are already set. Please disable one before enabling another.');
+            }
+        }
+    }
 
     download() { }
 
@@ -664,6 +707,7 @@ export class CanvasEditor {
         // Clear selection
         this.state.interaction.selectedId = null;
         this.state.interaction.selectedEndpoint = null;
+        this.state.interaction.anchorId = null;
     }
 
     closeAllPopups() {
@@ -700,10 +744,16 @@ export class CanvasEditor {
         if (item.type === 'material') {
             document.getElementById('color-option').classList.add('hidden');
             document.getElementById('link-option').classList.add('hidden');
-        } else {
+            document.getElementById('toggle-option').classList.add('hidden');
+        } else if (item.type === 'light') {
             document.getElementById('color-option').classList.remove('hidden');
             document.getElementById('link-option').classList.remove('hidden');
-        }
+            document.getElementById('toggle-option').classList.remove('hidden');
+        } else if (item.type === 'axis') {
+            document.getElementById('color-option').classList.add('hidden');
+            document.getElementById('link-option').classList.remove('hidden');
+            document.getElementById('toggle-option').classList.remove('hidden');
+        }   
 
         menu.style.left = Math.min(this.state.interaction.mouse.x, this.canvas.width - menu.offsetWidth) + 'px';
         menu.style.top = Math.min(this.state.interaction.mouse.y, this.canvas.height - menu.offsetHeight) + 'px';
@@ -819,6 +869,7 @@ export class CanvasEditor {
         this.ctx.translate(-this.state.camera.centerX, -this.state.camera.centerY);
 
         // Draw
+        this.drawAxes();
         this.drawCurves();
         this.drawNodes();
 
@@ -830,9 +881,73 @@ export class CanvasEditor {
         });
     }
 
+    drawDashline(start, end, color = '#888') {
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 2 / this.state.camera.zoom;
+        this.ctx.setLineDash([10 / this.state.camera.zoom, 10 / this.state.camera.zoom]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(start.x, start.y);
+        this.ctx.lineTo(end.x, end.y);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+    }
+
+    drawAxes() {
+        // draw xaxis and yaxis
+        for (const axis of [this.workspace.xaxis, this.workspace.yaxis]) {
+            if (!axis) continue;
+            const end = this.workspace._nodes.get(axis.id);
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 7 / this.state.camera.zoom;
+            this.ctx.beginPath();
+            this.ctx.moveTo(axis.start.x, axis.start.y);
+            this.ctx.lineTo(end.x, end.y);
+            this.ctx.stroke();
+        }
+        // draw mouse-axis dashed line when anchoring
+        if (this.state.interaction.anchorId) {
+            let start;
+            const end = this._canvas2coord(this.state.interaction.mouse);
+            if (this.workspace.xaxis?.id === this.state.interaction.selectedId) {
+                start = { x: end.x, y: this.workspace.xaxis.start.y };
+            } else if (this.workspace.yaxis?.id === this.state.interaction.selectedId) {
+                start = { x: this.workspace.yaxis.start.x, y: end.y };
+            }
+            this.drawDashline(start, end);
+        }
+        
+        // highlight xaxis-to-item
+        if (this.workspace.xaxis) {
+            const itemIds = (this.state.interaction.selectedId === this.workspace.xaxis.id) ? 
+                this.workspace._nodes.keys() : [this.state.interaction.selectedId];
+            for (const id of itemIds) {
+                const value = this.world.axes.getValue(this.workspace.xaxis.id, id);
+                if (value !== undefined) {
+                    const end = this.workspace._nodes.get(id);
+                    const start = { x: end.x, y: this.workspace.xaxis.start.y };
+                    this.drawDashline(start, end);
+                    this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on xaxis
+                }
+            }
+        }
+        // highlight yaxis-to-item
+        if (this.workspace.yaxis) {
+            const itemIds = (this.state.interaction.selectedId === this.workspace.yaxis.id) ?
+                this.workspace._nodes.keys() : [this.state.interaction.selectedId];
+            for (const id of itemIds) {
+                const value = this.world.axes.getValue(this.workspace.yaxis.id, id);
+                if (value !== undefined) {
+                    const end = this.workspace._nodes.get(id);
+                    const start = { x: this.workspace.yaxis.start.x, y: end.y };
+                    this.drawDashline(start, end);
+                    this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on yaxis
+                }
+            }
+        }
+    }
 
     drawCurves() {
-        if (this.currentMode() === 'link') { // link light to item
+        if (this.currentMode() === 'link-light') { // link light to item
             const nodeStyle = this.workspace._nodes.get(this.state.interaction.selectedId);
             const start = { x: nodeStyle.x, y: nodeStyle.y };
             const end = this._canvas2coord(this.state.interaction.mouse);
@@ -904,6 +1019,7 @@ export class CanvasEditor {
     drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
 
+        // Draw icon/fill
         if (info.icon) {
             if (info.icon.width === 0 || info.icon.height === 0) {
                 console.warn('Canvas has zero width or height for item:', info.id);
@@ -912,12 +1028,18 @@ export class CanvasEditor {
             // fit the image height to radius
             const scale = (radius * 2) / info.icon.height;
             this.ctx.drawImage(info.icon, info.x - info.icon.width * scale / 2, info.y - radius, info.icon.width * scale, info.icon.height * scale);
+        } else if (info.type === 'axis') {
+            const arrowImg = new Image();
+            arrowImg.src = 'assets/square.png';
+            const scale = (radius * 2) / arrowImg.height;
+            this.ctx.drawImage(arrowImg, info.x - arrowImg.width * scale / 2, info.y - radius, arrowImg.width * scale, arrowImg.height * scale);
         } else {
             this.ctx.arc(info.x, info.y, radius, 0, 2 * Math.PI);
             this.ctx.fillStyle = info.color;
             this.ctx.fill();
         }
 
+        // Draw border (only for material type)
         if (info.type === 'material') {
             // Material: white fill with border
             this.ctx.strokeStyle = '#333333' + info.color.slice(-2);
@@ -943,6 +1065,7 @@ export class CanvasEditor {
             this.ctx.setLineDash([]);
         }
     }
+
     /**
      * COMMON PRACTICE 6: Cleanup Method
      * Important for preventing memory leaks when destroying the instance
