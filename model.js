@@ -4,6 +4,7 @@
  * @typedef {'material' | 'light'} ItemType
  * @typedef {{id: id, type: ItemType, title: string, body: string, icon?: string}} ItemData
  * @typedef {{startId: id, midId: id, endId: id | null}} ProjectionData
+ * @typedef {{axisId: id, itemId: id, value: number}} MeasurementData
  * @typedef {string} color string in hex format of length 6
  * @typedef {{x: number, y: number}} coord
  * @typedef {any} SuperGifCanvas
@@ -102,28 +103,89 @@ class Relations extends Map {
     }
 }
 
-// Future: AxisItem 
+/** @extends {Map<id, Map<id, number>>} axisId => itemId => number */
+class Measurements extends Map {
+    constructor() {
+        super();
+    }
+    /** @type {(measurement: MeasurementData) => void} set item value on axis */
+    setValue(measurement) {
+        let innerMap = this.get(measurement.axisId);
+        if (!innerMap) {
+            innerMap = new Map();
+            this.set(measurement.axisId, innerMap);
+        }
+        innerMap.set(measurement.itemId, measurement.value);
+    }
+    /** @type {(axisId: id, itemId: id) => number | undefined} get item value on axis */
+    getValue(axisId, itemId) {
+        return this.get(axisId)?.get(itemId);
+    }
+    /** @type {(axisId: id, itemId: id) => boolean} delete measurement, return true if existed */
+    unlink(axisId, itemId) {
+        return this.get(axisId)?.delete(itemId) ?? false;
+    }
+    /** @type {(id: id) => void} remove all measurements related id */
+    unlinkAll(id) {
+        this.delete(id); // remove as axis
+        for (const item2value of this.values()) {
+            item2value.delete(id); // remove as item
+        }
+    }
+    /** @type {() => MeasurementData[]} */
+    toObject() {
+        const array = [];
+        for (const [axisId, item2value] of this.entries()) {
+            for (const [itemId, value] of item2value.entries()) {
+                array.push({ axisId, itemId, value });
+            }
+        }
+        return array;
+    }
+    /** @type {(axisId: id) => {min: number, max: number} | undefined} range of measurements on axis */
+    getRange(axisId) {
+        let min = Infinity;
+        let max = -Infinity;
+        const item2value = this.get(axisId);
+        if (!item2value) return undefined;
+        for (const value of item2value.values()) {
+            min = Math.min(min, value);
+            max = Math.max(max, value);
+        }
+        return { min, max };
+    }
+    /** @type {(obj: MeasurementData[]) => Measurements} */
+    static fromObject(obj) {
+        const axes = new Measurements();
+        obj.forEach(entry => {
+            axes.setValue(entry);
+        });
+        return axes;
+    }
+}
 
 class World {
     constructor() {
         /** @type {Map<id, Item>} */
         this.items = new Map();
         this.projections = new Relations();
-        // this.axes = new Map(); // id => AxisItem (future)
+        this.axes = new Measurements();
     }
     toObject() {
         return {
             items: Array.from(this.items.values()).map(item => item.toObject()),
             projections: this.projections.toObject(),
+            axes: this.axes.toObject(),
         };
     }
-    /** @type {(obj: {items: ItemData[], projections: ProjectionData[]}) => World} */
+    /** @type {(obj: {items: ItemData[], projections: ProjectionData[], axes: MeasurementData[]}) => World} */
     static fromObject(obj) {
         const world = new World();
         obj.items.forEach(item => {
             world.items.set(item.id, Item.fromObject(item));
         });
         world.projections = Relations.fromObject(obj.projections);
+        world.axes = Measurements.fromObject(obj.axes);
         return world;
     }
     /** @type {(type: ItemType) => Item} */
@@ -145,6 +207,7 @@ class World {
         if (exist) {
             this.items.delete(id); // remove item from world
             this.projections.unlinkAll(id); // remove projections related to this item
+            this.axes.unlinkAll(id); // remove measurements related to this axis
         }
         return exist;
     }
@@ -178,9 +241,6 @@ class World {
         return Array.from(this.items.values()).filter(item =>
             !skipset.has(item.id) && item.title.toLowerCase().includes(lowerQuery)
         );
-        // return Array.from(this.items.values()).filter(item => 
-        //     item.title.toLowerCase().includes(lowerQuery)
-        // );
     }
 }
 
@@ -199,6 +259,14 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this._endpoints = new Map();
         /** @type {Map<id, HTMLImageElement | SuperGifCanvas>} */
         this._icons = new Map();
+        /** @type {{id: id, start: coord} | null} selected x-axis id */
+        this.xaxis = null;
+        /** @type {{id: id, start: coord} | null} selected y-axis id */
+        this.yaxis = null;
+        /** @type {{min: number, max: number} | null} selected x-axis range */
+        this._xrange = null;
+        /** @type {{min: number, max: number} | null} selected y-axis range */
+        this._yrange = null;
     }
     toObject() {
         return {
@@ -256,6 +324,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     delete(id, world) {
         world.delete(id); // remove from world first
         this.hide(id, world);
+        if (this.xaxis?.id === id) this.xaxis = null;
+        if (this.yaxis?.id === id) this.yaxis = null;
     }
     /** @type {(id: id, world: World) => void} */
     hide(id, world) { // remove from attention, but keep in world
@@ -292,6 +362,14 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     /** @type {(id: id, x?: number | null, y?: number | null, color?: color | null) => void} */
     setStyle(id, x = null, y = null, color = null) {
         const style = this._nodes.get(id);
+        if (x !== null && y !== null && style) { // move axis start point accordingly
+            const delta = Vec.sub({x, y}, style);
+            if (this.xaxis?.id == id) {
+                this.xaxis.start.y = this.xaxis.start.y + delta.y;
+            } else if (this.yaxis?.id == id) {
+                this.yaxis.start.x = this.yaxis.start.x + delta.x;
+            }
+        }
         if (style) {
             this._nodes.set(id, {
                 x: x ?? style.x, y: y ?? style.y, color: color ?? style.color,
@@ -300,7 +378,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     }
     /** @type {(world: World) => Iterable<{id: id, type: ItemType, title: string, x: number, y: number, color: string, icon: any | null}>} */
     *nodes(world) {
-        // this._updateNodes(world); // unneeded since we update on every add/delete/hide
+        this._updateNodes(world); // do we need to update every time?
         for (const [id, info] of this._nodes.entries()) {
             const item = world.get(id);
             if (!item) {
@@ -398,6 +476,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     // private methods
     /** @type {(world: World) => void} */
     _updateNodes(world) {
+        this._updateRanges(world);
+        // TODO: lock nodes up to axis
         // set default color and random position for missing items ONLY
         for (const id of this.items) {
             const item = world.get(id);
@@ -468,6 +548,29 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 }
             }
         }
+        this._updateRanges(world);
+        let end;
+        if (this._xrange && this.xaxis && (end = this._nodes.get(this.xaxis.id)) ) {
+            // endx
+            for (const id of this._nodes.keys()) {
+                const value = world.axes.getValue(this.xaxis.id, id);
+                if (value === undefined) { continue; }
+                // lock x-axis nodes accordingly
+                const prop = utils.unlerp(this._xrange.min, this._xrange.max, value);
+                const newX = utils.lerp(this.xaxis.start.x, end.x, prop);
+                this.setStyle(id, newX, null, null);
+            }
+        }
+        if (this._yrange && this.yaxis && (end = this._nodes.get(this.yaxis.id)) ) {
+            for (const id of this._nodes.keys()) {
+                const value = world.axes.getValue(this.yaxis.id, id);
+                if (value === undefined) { continue; }
+                // lock y-axis nodes accordingly
+                const prop = utils.unlerp(this._yrange.min, this._yrange.max, value);
+                const newY = utils.lerp(this.yaxis.start.y, end.y, prop);
+                this.setStyle(id, null, newY, null);
+            }
+        }
     }
     /** @type {(world: World) => void} */
     _updateEndpoints(world) {
@@ -498,6 +601,36 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 );
             }
             this._endpoints.set(`${start}-${mid}`, endpoint);
+        }
+    }
+    /** @type {(world: World) => void} */
+    _updateRanges(world) {
+        let xrange, yrange;
+
+        // Update x-axis range
+        if (!this.xaxis) {
+            this._xrange = null;
+        } else if (!this._xrange) { // only update if not already set
+            if (!(xrange = world.axes.getRange(this.xaxis.id))) { // default range if no measurements
+                this._xrange = { min: 0, max: 5 };
+            } else if (xrange.min === xrange.max) { // expand degenerate range
+                this._xrange = { min: xrange.min - 3, max: xrange.max + 3 };
+            } else { // normal range
+                this._xrange = xrange;
+            }
+        }
+    
+        // Update y-axis range
+        if (!this.yaxis) {
+            this._yrange = null;
+        } else if (!this._yrange) { // only update if not already set
+            if (!(yrange = world.axes.getRange(this.yaxis.id))) { // default range if no measurements
+                this._yrange = { min: 0, max: 5 };
+            } else if (yrange.min === yrange.max) { // expand degenerate range
+                this._yrange = { min: yrange.min - 3, max: yrange.max + 3 };
+            } else { // normal range
+                this._yrange = yrange;
+            }
         }
     }
 }
