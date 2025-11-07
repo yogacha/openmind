@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load default files on startup
     try {
-        // await window.app.loadDefaultFiles();
+        await window.app.loadDefaultFiles();
     } catch (error) {
         console.warn('Could not load default files:', error);
     }
