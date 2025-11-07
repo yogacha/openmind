@@ -32,18 +32,16 @@ export class App extends CanvasEditor {
                         const end = this.workspace._nodes.get(this.workspace.xaxis.id);
                         const prop = utils.unlerp(this.workspace.xaxis.start.x, end.x, coord.x);
                         value = utils.lerp(this.workspace._xrange.min, this.workspace._xrange.max, prop);
-                        // console.log('prop:', prop, 'axisValue:', value);
                     } else if (this.workspace.yaxis?.id === this.state.interaction.anchorId) {
                         const end = this.workspace._nodes.get(this.workspace.yaxis.id);
                         const prop = utils.unlerp(this.workspace.yaxis.start.y, end.y, coord.y);
                         value = utils.lerp(this.workspace._yrange.min, this.workspace._yrange.max, prop);
-                        // console.log('prop:', prop, 'axisValue:', value);
                     }
                     
                     this.world.axes.setValue({
                         axisId: this.state.interaction.anchorId,
                         itemId: this.state.interaction.selectedId,
-                        value: value, // TODO: determine value based on range
+                        value: value
                     });
                     console.log(`setValue(${this.state.interaction.anchorId}, ${this.state.interaction.selectedId}, ${value})`);
                 }

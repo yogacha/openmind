@@ -24,6 +24,7 @@ const endpointRadius = 7; // for hit testing
 const icons = new Map([
     ['light', '💡'],
     ['material', '🪨'],
+    ['axis', '📏'],
 ]);
 
 export class CanvasEditor {
