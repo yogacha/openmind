@@ -915,38 +915,33 @@ export class CanvasEditor {
                 start = { x: this.workspace.yaxis.start.x, y: end.y };
             }
             this.drawDashline(start, end);
-            console.log('drawing anchoring line for axis', this.state.interaction.selectedId);
         }
         
         // highlight xaxis-to-item
         if (this.workspace.xaxis) {
             const itemIds = (this.state.interaction.selectedId === this.workspace.xaxis.id) ? 
-                this.workspace.items : [this.state.interaction.selectedId];
+                this.workspace._nodes.keys() : [this.state.interaction.selectedId];
             for (const id of itemIds) {
                 const value = this.world.axes.getValue(this.workspace.xaxis.id, id);
                 if (value !== undefined) {
                     const end = this.workspace._nodes.get(id);
                     const start = { x: end.x, y: this.workspace.xaxis.start.y };
                     this.drawDashline(start, end);
-                    if (id === this.state.interaction.selectedId) {
-                        this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on xaxis
-                    }
+                    this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on xaxis
                 }
             }
         }
         // highlight yaxis-to-item
         if (this.workspace.yaxis) {
             const itemIds = (this.state.interaction.selectedId === this.workspace.yaxis.id) ?
-                this.workspace.items : [this.state.interaction.selectedId];
+                this.workspace._nodes.keys() : [this.state.interaction.selectedId];
             for (const id of itemIds) {
                 const value = this.world.axes.getValue(this.workspace.yaxis.id, id);
                 if (value !== undefined) {
                     const end = this.workspace._nodes.get(id);
                     const start = { x: this.workspace.yaxis.start.x, y: end.y };
                     this.drawDashline(start, end);
-                    if (id === this.state.interaction.selectedId) {
-                        this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on yaxis
-                    }
+                    this.drawEndpoint({ x: start.x, y: start.y, color: '#ccc' }); // draw a control point on yaxis
                 }
             }
         }

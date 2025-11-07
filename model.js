@@ -378,7 +378,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     }
     /** @type {(world: World) => Iterable<{id: id, type: ItemType, title: string, x: number, y: number, color: string, icon: any | null}>} */
     *nodes(world) {
-        // this._updateNodes(world); // unneeded since we update on every add/delete/hide
+        this._updateNodes(world); // do we need to update every time?
         for (const [id, info] of this._nodes.entries()) {
             const item = world.get(id);
             if (!item) {
@@ -476,6 +476,8 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     // private methods
     /** @type {(world: World) => void} */
     _updateNodes(world) {
+        this._updateRanges(world);
+        // TODO: lock nodes up to axis
         // set default color and random position for missing items ONLY
         for (const id of this.items) {
             const item = world.get(id);

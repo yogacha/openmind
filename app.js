@@ -33,6 +33,7 @@ export class App extends CanvasEditor {
                         itemId: this.state.interaction.selectedId,
                         value: value, // TODO: determine value based on range
                     });
+                    // this.workspace._updateRanges(this.world); // update ranges after setting value
                     console.log(`setValue(${this.state.interaction.anchorId}, ${this.state.interaction.selectedId}, ${value})`);
                 }
                 this.state.interaction.anchorId = null;
@@ -211,6 +212,7 @@ export class App extends CanvasEditor {
     }
     hideSelectedItem() {
         this.workspace.hide(this.state.interaction.selectedId, this.world);
+        this.state.interaction.selectedId = null;
     }
     editSelectedItem() {
         if (!this.state.interaction.selectedId) return;
