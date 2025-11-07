@@ -142,6 +142,18 @@ class Measurements extends Map {
         }
         return array;
     }
+    /** @type {(axisId: id) => {min: number, max: number} | undefined} range of measurements on axis */
+    getRange(axisId) {
+        let min = Infinity;
+        let max = -Infinity;
+        const item2value = this.get(axisId);
+        if (!item2value) return undefined;
+        for (const value of item2value.values()) {
+            min = Math.min(min, value);
+            max = Math.max(max, value);
+        }
+        return { min, max };
+    }
     /** @type {(obj: MeasurementData[]) => Measurements} */
     static fromObject(obj) {
         const axes = new Measurements();
@@ -251,6 +263,10 @@ class Workspace { // describe status of workspace data, actions in workspace sho
         this.xaxis = null;
         /** @type {{id: id, start: coord} | null} selected y-axis id */
         this.yaxis = null;
+        /** @type {{min: number, max: number} | null} selected x-axis range */
+        this._xrange = null;
+        /** @type {{min: number, max: number} | null} selected y-axis range */
+        this._yrange = null;
     }
     toObject() {
         return {
@@ -560,6 +576,30 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 );
             }
             this._endpoints.set(`${start}-${mid}`, endpoint);
+        }
+    }
+    /** @type {(world: World) => void} */
+    _updateRanges(world) {
+        let xrange, yrange;
+
+        if (!this.xaxis) {
+            this._xrange = null;
+        } else if (!(xrange = world.axes.getRange(this.xaxis.id))) { // default range if no measurements
+            this._xrange = { min: 0, max: 5 };
+        } else if (xrange.min === xrange.max) { // expand degenerate range
+            this._xrange = { min: xrange.min - 3, max: xrange.max + 3 };
+        } else { // normal range
+            this._xrange = xrange;
+        }
+    
+        if (!this.yaxis) {
+            this._yrange = null;
+        } else if (!(yrange = world.axes.getRange(this.yaxis.id))) { // default range if no measurements
+            this._yrange = { min: 0, max: 5 };
+        } else if (yrange.min === yrange.max) { // expand degenerate range
+            this._yrange = { min: yrange.min - 3, max: yrange.max + 3 };
+        } else { // normal range
+            this._yrange = yrange;
         }
     }
 }
