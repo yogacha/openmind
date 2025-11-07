@@ -548,6 +548,29 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 }
             }
         }
+        this._updateRanges(world);
+        let end;
+        if (this._xrange && this.xaxis && (end = this._nodes.get(this.xaxis.id)) ) {
+            // endx
+            for (const id of this._nodes.keys()) {
+                const value = world.axes.getValue(this.xaxis.id, id);
+                if (value === undefined) { continue; }
+                // lock x-axis nodes accordingly
+                const prop = utils.unlerp(this._xrange.min, this._xrange.max, value);
+                const newX = utils.lerp(this.xaxis.start.x, end.x, prop);
+                this.setStyle(id, newX, null, null);
+            }
+        }
+        if (this._yrange && this.yaxis && (end = this._nodes.get(this.yaxis.id)) ) {
+            for (const id of this._nodes.keys()) {
+                const value = world.axes.getValue(this.yaxis.id, id);
+                if (value === undefined) { continue; }
+                // lock y-axis nodes accordingly
+                const prop = utils.unlerp(this._yrange.min, this._yrange.max, value);
+                const newY = utils.lerp(this.yaxis.start.y, end.y, prop);
+                this.setStyle(id, null, newY, null);
+            }
+        }
     }
     /** @type {(world: World) => void} */
     _updateEndpoints(world) {
@@ -584,24 +607,30 @@ class Workspace { // describe status of workspace data, actions in workspace sho
     _updateRanges(world) {
         let xrange, yrange;
 
+        // Update x-axis range
         if (!this.xaxis) {
             this._xrange = null;
-        } else if (!(xrange = world.axes.getRange(this.xaxis.id))) { // default range if no measurements
-            this._xrange = { min: 0, max: 5 };
-        } else if (xrange.min === xrange.max) { // expand degenerate range
-            this._xrange = { min: xrange.min - 3, max: xrange.max + 3 };
-        } else { // normal range
-            this._xrange = xrange;
+        } else if (!this._xrange) { // only update if not already set
+            if (!(xrange = world.axes.getRange(this.xaxis.id))) { // default range if no measurements
+                this._xrange = { min: 0, max: 5 };
+            } else if (xrange.min === xrange.max) { // expand degenerate range
+                this._xrange = { min: xrange.min - 3, max: xrange.max + 3 };
+            } else { // normal range
+                this._xrange = xrange;
+            }
         }
     
+        // Update y-axis range
         if (!this.yaxis) {
             this._yrange = null;
-        } else if (!(yrange = world.axes.getRange(this.yaxis.id))) { // default range if no measurements
-            this._yrange = { min: 0, max: 5 };
-        } else if (yrange.min === yrange.max) { // expand degenerate range
-            this._yrange = { min: yrange.min - 3, max: yrange.max + 3 };
-        } else { // normal range
-            this._yrange = yrange;
+        } else if (!this._yrange) { // only update if not already set
+            if (!(yrange = world.axes.getRange(this.yaxis.id))) { // default range if no measurements
+                this._yrange = { min: 0, max: 5 };
+            } else if (yrange.min === yrange.max) { // expand degenerate range
+                this._yrange = { min: yrange.min - 3, max: yrange.max + 3 };
+            } else { // normal range
+                this._yrange = yrange;
+            }
         }
     }
 }

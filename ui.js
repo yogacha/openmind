@@ -666,7 +666,6 @@ export class CanvasEditor {
                 this.toggleItemStatus();
                 this.state.interaction.anchorId = this.state.interaction.selectedId;
             }
-            console.log('Linking axis not implemented yet.');
         }
     }
 
