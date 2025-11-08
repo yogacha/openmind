@@ -1020,6 +1020,7 @@ export class CanvasEditor {
     drawNode(info, radius = nodeRadius) {
         this.ctx.beginPath();
 
+        this.ctx.globalAlpha = this.workspace.items.has(info.id) ? 1.0 : 0.4;
         // Draw icon/fill
         if (info.icon) {
             if (info.icon.width === 0 || info.icon.height === 0) {
@@ -1043,7 +1044,7 @@ export class CanvasEditor {
         // Draw border (only for material type)
         if (info.type === 'material') {
             // Material: white fill with border
-            this.ctx.strokeStyle = '#333333' + info.color.slice(-2);
+            this.ctx.strokeStyle = '#333333';
             this.ctx.lineWidth = 2 / this.state.camera.zoom;
             this.ctx.stroke();
         }
@@ -1054,6 +1055,9 @@ export class CanvasEditor {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText(info.title, info.x, info.y - (7 + radius) * 1.2);
+        
+        // Reset alpha
+        this.ctx.globalAlpha = 1.0;
 
         // Draw selection ring if selected
         if (this.state.interaction.selectedId === info.id) {

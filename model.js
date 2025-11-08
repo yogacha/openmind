@@ -391,7 +391,7 @@ class Workspace { // describe status of workspace data, actions in workspace sho
                 title: item.title,
                 x: info.x,
                 y: info.y,
-                color: info.color.slice(0, 7) + (this.items.has(id) ? 'ff' : '88'),
+                color: info.color,
                 icon: this._icons.get(id) ?? null,
             };
         }
